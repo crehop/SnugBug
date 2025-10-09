@@ -237,14 +237,14 @@ class FireflyUploadImageNode:
 FIREFLY_ASPECT_RATIOS = [
     "2048x2048 (1:1)",
     "2688x1536 (16:9)",
-    "2688x1512 (16:9)",
     "2304x1792 (4:3)",
     "1792x2304 (3:4)",
     "1344x768 (16:9)",
-    "1344x756 (16:9)",
     "1152x896 (4:3)",
     "1024x1024 (1:1)",
     "896x1152 (3:4)",
+    "2688x3456 (9:16)",
+    "3456x2688 (16:9)",
 ]
 
 class FireflyTextToImageNode:
@@ -321,6 +321,13 @@ class FireflyTextToImageNode:
                         "tooltip": "Firefly model version (x-model-version header).",
                     },
                 ),
+                "upsampler_type": (
+                    ["default", "low_creativity"],
+                    {
+                        "default": "default",
+                        "tooltip": "Upsampler type (only for image4_custom model).",
+                    },
+                ),
             },
             "optional": {
                 # Connection inputs
@@ -332,10 +339,9 @@ class FireflyTextToImageNode:
                 "structure_upload_id": (IO.STRING, {"forceInput": True, "tooltip": "Structure image upload ID (connect node or click to type)"}),
                 "prompt_suffix": (IO.STRING, {"forceInput": True, "tooltip": "Prompt suffix (connect node or click to type)"}),
 
-                # Non-connection inputs (INT dropdowns)
+                # Non-connection inputs (INT sliders)
                 "style_strength": (IO.INT, {"default": 50, "min": 0, "max": 100, "tooltip": "Style strength (0-100)"}),
                 "structure_strength": (IO.INT, {"default": 50, "min": 0, "max": 100, "tooltip": "Structure strength (0-100)"}),
-                "upsampler_type": (["default", "low_creativity"], {"default": "default", "tooltip": "Upsampler (image4_custom only)"}),
 
                 # Hidden text companions for dual input (will be shown via JavaScript)
                 "negative_prompt_text": (IO.STRING, {"default": "", "multiline": True}),
@@ -391,6 +397,10 @@ class FireflyTextToImageNode:
         structure_upload_id = (structure_upload_id + structure_upload_id_text).strip()
         prompt_suffix = (prompt_suffix + prompt_suffix_text).strip()
 
+        # Handle empty upsampler_type (default to "default")
+        if not upsampler_type or upsampler_type == "":
+            upsampler_type = "default"
+
         # Concatenate prompt with suffix if provided
         full_prompt = (prompt + prompt_suffix).strip()
 
@@ -433,7 +443,7 @@ class FireflyTextToImageNode:
             request = GenerateImagesRequest(
                 prompt=full_prompt,
                 contentClass=FireflyContentClass(content_class),
-                customModelId=custom_model_id if custom_model_id else None,
+                customModelId=custom_model_id if (custom_model_id and model_version.endswith("_custom")) else None,
                 size=FireflySize(width=width, height=height),
                 numVariations=num_variations,
                 seeds=[seed],
