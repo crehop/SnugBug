@@ -68,6 +68,12 @@ class FireflyAlignment(str, Enum):
     CENTER = "center"
 
 
+class FireflyUpsamplerType(str, Enum):
+    """Upsampler type for image4_custom"""
+    DEFAULT = "default"
+    LOW_CREATIVITY = "low_creativity"
+
+
 # ============================================================================
 # Common Models
 # ============================================================================
@@ -105,18 +111,27 @@ class FireflyStructureReference(BaseModel):
     strength: Optional[int] = Field(None, description="Structure strength", ge=0, le=100)
 
 
+class FireflyStyleImageReferenceV3(BaseModel):
+    """Style image reference for V3"""
+    source: FireflyPublicBinaryInput = Field(..., description="Style image source")
+
+
 class FireflyStyles(BaseModel):
     """Style configuration"""
-    imageReference: Optional[FireflyStyleImageReference] = Field(None, description="Style type")
+    imageReference: Optional[FireflyStyleImageReferenceV3] = Field(None, description="Style image reference")
+    presets: Optional[List[str]] = Field(None, description="Style presets")
     strength: Optional[int] = Field(None, description="Style strength", ge=0, le=100)
-    source: Optional[FireflyPublicBinaryInput] = Field(None, description="Style image reference")
+
+
+class FireflyStructureImageReferenceV3(BaseModel):
+    """Structure image reference for V3"""
+    source: FireflyPublicBinaryInput = Field(..., description="Structure image source")
 
 
 class FireflyStructure(BaseModel):
     """Structure configuration"""
-    imageReference: Optional[str] = Field(None, description="Structure reference type")
+    imageReference: Optional[FireflyStructureImageReferenceV3] = Field(None, description="Structure reference")
     strength: Optional[int] = Field(None, description="Structure strength", ge=0, le=100)
-    source: Optional[FireflyPublicBinaryInput] = Field(None, description="Structure image reference")
 
 
 class FireflyOutputImage(BaseModel):
@@ -139,14 +154,16 @@ class GenerateImagesRequest(BaseModel):
     """Request for text-to-image generation"""
     prompt: str = Field(..., description="Text prompt for generation", max_length=1024)
     contentClass: Optional[FireflyContentClass] = Field(FireflyContentClass.PHOTO, description="Content class")
+    customModelId: Optional[str] = Field(None, description="Custom model ID for custom model versions")
     size: Optional[FireflySize] = Field(None, description="Output size")
     numVariations: Optional[int] = Field(1, description="Number of variations", ge=1, le=4)
     seeds: Optional[List[int]] = Field(None, description="Seeds for generation")
     negativePrompt: Optional[str] = Field(None, description="Negative prompt", max_length=1024)
-    promptBiasingLocaleCode: Optional[FireflyPromptBiasingLocale] = Field(None, description="Locale for prompt")
-    styles: Optional[FireflyStyles] = Field(None, description="Style reference")
+    promptBiasingLocaleCode: Optional[str] = Field(None, description="Locale for prompt (e.g., en-US)")
+    style: Optional[FireflyStyles] = Field(None, description="Style reference")
     structure: Optional[FireflyStructure] = Field(None, description="Structure reference")
     visualIntensity: Optional[int] = Field(None, description="Visual intensity", ge=2, le=10)
+    upsamplerType: Optional[FireflyUpsamplerType] = Field(None, description="Upsampler type for image4_custom")
 
 
 # ============================================================================

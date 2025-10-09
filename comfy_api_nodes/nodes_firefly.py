@@ -28,6 +28,9 @@ from comfy_api_nodes.apis.firefly_api import (
     FireflyInputMask,
     FireflyStyles,
     FireflyStructure,
+    FireflyStyleImageReferenceV3,
+    FireflyStructureImageReferenceV3,
+    FireflyUpsamplerType,
     GenerateImagesRequest,
     FillImageRequest,
     ExpandImageRequest,
@@ -68,15 +71,21 @@ import logging
 # Helper Functions
 # ============================================================================
 
-async def create_adobe_client() -> ApiClient:
+async def create_adobe_client(model_version: str = "image3") -> ApiClient:
     """
     Create an ApiClient configured for Adobe Firefly API with OAuth authentication.
+
+    Args:
+        model_version: Firefly model version (e.g., "image3", "image4_standard")
 
     Returns:
         ApiClient instance with Adobe authentication
     """
     auth_manager = get_adobe_auth_manager()
     auth_headers = await auth_manager.get_auth_headers()
+
+    # Add model version header
+    auth_headers["x-model-version"] = model_version
 
     # Create client with dummy auth to bypass ComfyUI login check
     # We'll replace the headers with Adobe OAuth headers
@@ -178,13 +187,6 @@ async def download_firefly_outputs(
         if hasattr(output, 'image') and output.image and output.image.url:
             url = output.image.url
             urls.append(url)
-
-            if unique_id:
-                urls_string = '\n'.join(urls)
-                PromptServer.instance.send_progress_text(
-                    f"Result URL: {urls_string}", unique_id
-                )
-
             all_bytesio.append(await download_url_to_bytesio(url, timeout=timeout))
 
     return all_bytesio
@@ -298,9 +300,9 @@ class FireflyTextToImageNode:
                     {
                         "default": 1,
                         "min": 1,
-                        "max": 2147483647,  # Max 32-bit integer for Adobe Firefly API
+                        "max": 100000,
                         "control_after_generate": True,
-                        "tooltip": "Seed for reproducibility.",
+                        "tooltip": "Seed for reproducibility (1-100,000).",
                     },
                 ),
                 "visual_intensity": (
@@ -312,19 +314,42 @@ class FireflyTextToImageNode:
                         "tooltip": "Visual intensity of the generation (2-10).",
                     },
                 ),
-            },
-            "optional": {
-                "negative_prompt": (
-                    IO.STRING,
+                "model_version": (
+                    ["image3", "image3_custom", "image4_standard", "image4_ultra", "image4_custom"],
                     {
-                        "default": "",
-                        "forceInput": True,
-                        "tooltip": "Negative prompt to exclude unwanted elements.",
+                        "default": "image4_standard",
+                        "tooltip": "Firefly model version (x-model-version header).",
                     },
                 ),
             },
+            "optional": {
+                # Connection inputs
+                "negative_prompt": (IO.STRING, {"forceInput": True, "tooltip": "Negative prompt (connect node or click to type)"}),
+                "custom_model_id": (IO.STRING, {"forceInput": True, "tooltip": "Custom model ID (connect node or click to type)"}),
+                "prompt_biasing_locale": (IO.STRING, {"forceInput": True, "tooltip": "Locale code (connect node or click to type)"}),
+                "style_upload_id": (IO.STRING, {"forceInput": True, "tooltip": "Style image upload ID (connect node or click to type)"}),
+                "style_presets": (IO.STRING, {"forceInput": True, "tooltip": "Style presets (connect node or click to type)"}),
+                "structure_upload_id": (IO.STRING, {"forceInput": True, "tooltip": "Structure image upload ID (connect node or click to type)"}),
+                "prompt_suffix": (IO.STRING, {"forceInput": True, "tooltip": "Prompt suffix (connect node or click to type)"}),
+
+                # Non-connection inputs (INT dropdowns)
+                "style_strength": (IO.INT, {"default": 50, "min": 0, "max": 100, "tooltip": "Style strength (0-100)"}),
+                "structure_strength": (IO.INT, {"default": 50, "min": 0, "max": 100, "tooltip": "Structure strength (0-100)"}),
+                "upsampler_type": (["default", "low_creativity"], {"default": "default", "tooltip": "Upsampler (image4_custom only)"}),
+
+                # Hidden text companions for dual input (will be shown via JavaScript)
+                "negative_prompt_text": (IO.STRING, {"default": "", "multiline": True}),
+                "custom_model_id_text": (IO.STRING, {"default": ""}),
+                "prompt_biasing_locale_text": (IO.STRING, {"default": ""}),
+                "style_upload_id_text": (IO.STRING, {"default": ""}),
+                "style_presets_text": (IO.STRING, {"default": ""}),
+                "structure_upload_id_text": (IO.STRING, {"default": ""}),
+                "prompt_suffix_text": (IO.STRING, {"default": "", "multiline": True}),
+            },
             "hidden": {
                 "unique_id": "UNIQUE_ID",
+                # Mark this node for dual input handling
+                "firefly_dual_input": "true",
             },
         }
 
@@ -335,11 +360,41 @@ class FireflyTextToImageNode:
         size: str,
         num_variations: int,
         seed: int,
-        negative_prompt: str = "",
         visual_intensity: int = 6,
+        model_version: str = "image4_standard",
+        negative_prompt: str = "",
+        custom_model_id: str = "",
+        prompt_biasing_locale: str = "",
+        style_upload_id: str = "",
+        style_strength: int = 50,
+        style_presets: str = "",
+        structure_upload_id: str = "",
+        structure_strength: int = 50,
+        upsampler_type: str = "default",
+        prompt_suffix: str = "",
+        # Text field companions (hidden, shown via JS)
+        negative_prompt_text: str = "",
+        custom_model_id_text: str = "",
+        prompt_biasing_locale_text: str = "",
+        style_upload_id_text: str = "",
+        style_presets_text: str = "",
+        structure_upload_id_text: str = "",
+        prompt_suffix_text: str = "",
         unique_id: Optional[str] = None,
     ):
-        validate_string(prompt, strip_whitespace=False, max_length=1024)
+        # Concatenate connection values with text field values
+        negative_prompt = (negative_prompt + negative_prompt_text).strip()
+        custom_model_id = (custom_model_id + custom_model_id_text).strip()
+        prompt_biasing_locale = (prompt_biasing_locale + prompt_biasing_locale_text).strip()
+        style_upload_id = (style_upload_id + style_upload_id_text).strip()
+        style_presets = (style_presets + style_presets_text).strip()
+        structure_upload_id = (structure_upload_id + structure_upload_id_text).strip()
+        prompt_suffix = (prompt_suffix + prompt_suffix_text).strip()
+
+        # Concatenate prompt with suffix if provided
+        full_prompt = (prompt + prompt_suffix).strip()
+
+        validate_string(full_prompt, strip_whitespace=False, max_length=1024)
 
         # Parse size string to extract width and height
         # Format: "2048x2048 (1:1)" -> width=2048, height=2048
@@ -347,36 +402,85 @@ class FireflyTextToImageNode:
         width = int(size_parts[0])
         height = int(size_parts[1])
 
-        # Create Adobe API client
-        client = await create_adobe_client()
+        # Create Adobe API client with model version
+        client = await create_adobe_client(model_version=model_version)
 
         try:
+            # Build style configuration if style_upload_id is provided
+            style_config = None
+            if style_upload_id:
+                style_ref = FireflyStyleImageReferenceV3(
+                    source=FireflyPublicBinaryInput(uploadId=style_upload_id)
+                )
+                style_config = FireflyStyles(
+                    imageReference=style_ref,
+                    strength=style_strength,
+                    presets=style_presets.split(",") if style_presets else None,
+                )
+
+            # Build structure configuration if structure_upload_id is provided
+            structure_config = None
+            if structure_upload_id:
+                structure_ref = FireflyStructureImageReferenceV3(
+                    source=FireflyPublicBinaryInput(uploadId=structure_upload_id)
+                )
+                structure_config = FireflyStructure(
+                    imageReference=structure_ref,
+                    strength=structure_strength,
+                )
+
             # Prepare request
             request = GenerateImagesRequest(
-                prompt=prompt,
+                prompt=full_prompt,
                 contentClass=FireflyContentClass(content_class),
+                customModelId=custom_model_id if custom_model_id else None,
                 size=FireflySize(width=width, height=height),
                 numVariations=num_variations,
                 seeds=[seed],
                 negativePrompt=negative_prompt if negative_prompt else None,
-                visualIntensity=visual_intensity,
+                promptBiasingLocaleCode=prompt_biasing_locale if prompt_biasing_locale else None,
+                style=style_config,
+                structure=structure_config,
+                visualIntensity=visual_intensity if model_version != "image4_custom" else None,
+                upsamplerType=FireflyUpsamplerType(upsampler_type) if model_version == "image4_custom" else None,
             )
 
             # Console logging
             console_log = ""
 
-            if unique_id:
-                console_log += "═══════════════════════════════════════════════════════\n"
-                console_log += "POST /v3/images/generate-async\n"
-                console_log += "───────────────────────────────────────────────────────\n"
-                console_log += f"Request Body:\n"
-                console_log += f"  prompt: {prompt[:50]}...\n" if len(prompt) > 50 else f"  prompt: {prompt}\n"
-                console_log += f"  contentClass: {content_class}\n"
-                console_log += f"  size: {width}x{height}\n"
-                console_log += f"  numVariations: {num_variations}\n"
-                console_log += f"  seed: {seed}\n"
+            console_log += "=======================================================\n"
+            console_log += "POST /v3/images/generate-async\n"
+            console_log += "-------------------------------------------------------\n"
+            console_log += f"Headers:\n"
+            console_log += f"  x-model-version: {model_version}\n"
+            console_log += f"\nRequest Body:\n"
+            console_log += f"  prompt: {full_prompt[:50]}...\n" if len(full_prompt) > 50 else f"  prompt: {full_prompt}\n"
+            if prompt_suffix:
+                console_log += f"  (main: '{prompt[:30]}...', suffix: '{prompt_suffix[:30]}...')\n"
+            console_log += f"  contentClass: {content_class}\n"
+            console_log += f"  size: {width}x{height}\n"
+            console_log += f"  numVariations: {num_variations}\n"
+            console_log += f"  seed: {seed}\n"
+            if model_version != "image4_custom":
                 console_log += f"  visualIntensity: {visual_intensity}\n"
-                PromptServer.instance.send_progress_text(console_log, unique_id)
+            if custom_model_id:
+                console_log += f"  customModelId: {custom_model_id}\n"
+            if prompt_biasing_locale:
+                console_log += f"  promptBiasingLocaleCode: {prompt_biasing_locale}\n"
+            if negative_prompt:
+                console_log += f"  negativePrompt: {negative_prompt[:30]}...\n" if len(negative_prompt) > 30 else f"  negativePrompt: {negative_prompt}\n"
+            if style_config:
+                console_log += f"  style:\n"
+                console_log += f"    uploadId: {style_upload_id}\n"
+                console_log += f"    strength: {style_strength}\n"
+                if style_presets:
+                    console_log += f"    presets: {style_presets}\n"
+            if structure_config:
+                console_log += f"  structure:\n"
+                console_log += f"    uploadId: {structure_upload_id}\n"
+                console_log += f"    strength: {structure_strength}\n"
+            if model_version == "image4_custom":
+                console_log += f"  upsamplerType: {upsampler_type}\n"
 
             # Submit async job
             submit_endpoint = ApiEndpoint(
@@ -394,18 +498,14 @@ class FireflyTextToImageNode:
 
             submit_response: AsyncAcceptResponse = await submit_op.execute(client=client)
 
-            if unique_id:
-                console_log += f"\nResponse: 202 Accepted\n"
-                console_log += f"  jobId: {submit_response.jobId}\n"
-                PromptServer.instance.send_progress_text(console_log, unique_id)
+            console_log += f"\nResponse: 202 Accepted\n"
+            console_log += f"  jobId: {submit_response.jobId}\n"
 
             # Poll for completion
-            if unique_id:
-                console_log += f"\n═══════════════════════════════════════════════════════\n"
-                console_log += f"GET /v3/status/{submit_response.jobId.split(':')[-1][:8]}...\n"
-                console_log += f"───────────────────────────────────────────────────────\n"
-                console_log += f"Polling for job completion...\n"
-                PromptServer.instance.send_progress_text(console_log, unique_id)
+            console_log += f"\n=======================================================\n"
+            console_log += f"GET /v3/status/{submit_response.jobId.split(':')[-1][:8]}...\n"
+            console_log += f"-------------------------------------------------------\n"
+            console_log += f"Polling for job completion...\n"
 
             poll_endpoint = ApiEndpoint(
                 path=f"/v3/status/{submit_response.jobId}",
@@ -421,19 +521,17 @@ class FireflyTextToImageNode:
                 failed_statuses=["failed", "canceled"],
                 status_extractor=lambda x: x.status,
                 api_base="https://firefly-api.adobe.io",
-                poll_interval=5.0,
+                poll_interval=2.0,
                 max_poll_attempts=120,
                 node_id=unique_id,
             )
 
             result: AsyncTaskResponse = await poll_op.execute(client=client)
 
-            if unique_id:
-                console_log += f"\nResponse: 200 OK\n"
-                console_log += f"  status: {result.status}\n"
-                console_log += f"  jobId: {result.jobId}\n"
-                console_log += f"  outputs: {len(result.outputs) if result.outputs else 0} image(s)\n"
-                PromptServer.instance.send_progress_text(console_log, unique_id)
+            console_log += f"\nResponse: 200 OK\n"
+            console_log += f"  status: {result.status}\n"
+            console_log += f"  jobId: {result.jobId}\n"
+            console_log += f"  outputs: {len(result.outputs) if result.outputs else 0} image(s)\n"
 
             # Debug: Log the response
             logging.info(f"Firefly API response: {result}")
@@ -442,29 +540,23 @@ class FireflyTextToImageNode:
 
             # Download outputs
             if not result.outputs:
-                if unique_id:
-                    console_log += f"\n═══════════════════════════════════════════════════════\n"
-                    console_log += f"ERROR: No outputs in response\n"
-                    console_log += f"  status: {result.status}\n"
-                    console_log += f"  errorCode: {result.errorCode}\n"
-                    console_log += f"  errorMessage: {result.errorMessage}\n"
-                    PromptServer.instance.send_progress_text(console_log, unique_id)
+                console_log += f"\n=======================================================\n"
+                console_log += f"ERROR: No outputs in response\n"
+                console_log += f"  status: {result.status}\n"
+                console_log += f"  errorCode: {result.errorCode}\n"
+                console_log += f"  errorMessage: {result.errorMessage}\n"
                 raise Exception(f"No outputs returned from Firefly API. Status: {result.status}, Full response: {result}")
 
-            if unique_id:
-                console_log += f"\n═══════════════════════════════════════════════════════\n"
-                console_log += f"Downloading {len(result.outputs)} output(s)...\n"
-                PromptServer.instance.send_progress_text(console_log, unique_id)
+            console_log += f"\n=======================================================\n"
+            console_log += f"Downloading {len(result.outputs)} output(s)...\n"
 
             output_bytesio = await download_firefly_outputs(
                 result.outputs,
                 unique_id=unique_id,
             )
 
-            if unique_id:
-                console_log += f"✓ Downloaded {len(output_bytesio)} image(s)\n"
-                console_log += f"═══════════════════════════════════════════════════════\n"
-                PromptServer.instance.send_progress_text(console_log, unique_id)
+            console_log += f"[OK] Downloaded {len(output_bytesio)} image(s)\n"
+            console_log += f"=======================================================\n"
 
             # Convert to tensors
             images = []
@@ -475,6 +567,11 @@ class FireflyTextToImageNode:
                 images.append(image)
 
             output_image = torch.cat(images, dim=0)
+
+            # Debug logging
+            logging.info(f"FireflyTextToImageNode returning debug_log, length: {len(console_log)}")
+            logging.info(f"Debug log preview: {console_log[:200]}")
+
             return (output_image, console_log)
         finally:
             await client.close()
@@ -515,11 +612,11 @@ class FireflyGenerativeFillNode:
                 "seed": (
                     IO.INT,
                     {
-                        "default": 0,
-                        "min": 0,
-                        "max": 2147483647,  # Max 32-bit integer for Adobe Firefly API
+                        "default": 1,
+                        "min": 1,
+                        "max": 100000,
                         "control_after_generate": True,
-                        "tooltip": "Seed for reproducibility.",
+                        "tooltip": "Seed for reproducibility (1-100,000).",
                     },
                 ),
             },
@@ -589,7 +686,7 @@ class FireflyGenerativeFillNode:
                     prompt=prompt if prompt else None,
                     negativePrompt=negative_prompt if negative_prompt else None,
                     numVariations=num_variations,
-                    seeds=[seed] if seed > 0 else None,
+                    seeds=[seed],
                 )
 
                 # Submit async job
@@ -709,11 +806,11 @@ class FireflyGenerativeExpandNode:
                 "seed": (
                     IO.INT,
                     {
-                        "default": 0,
-                        "min": 0,
-                        "max": 2147483647,  # Max 32-bit integer for Adobe Firefly API
+                        "default": 1,
+                        "min": 1,
+                        "max": 100000,
                         "control_after_generate": True,
-                        "tooltip": "Seed for reproducibility.",
+                        "tooltip": "Seed for reproducibility (1-100,000).",
                     },
                 ),
             },
@@ -775,7 +872,7 @@ class FireflyGenerativeExpandNode:
                     prompt=prompt if prompt else None,
                     negativePrompt=negative_prompt if negative_prompt else None,
                     numVariations=num_variations,
-                    seeds=[seed] if seed > 0 else None,
+                    seeds=[seed],
                 )
 
                 # Submit async job
@@ -876,11 +973,11 @@ class FireflyGenerateSimilarNode:
                 "seed": (
                     IO.INT,
                     {
-                        "default": 0,
-                        "min": 0,
-                        "max": 2147483647,  # Max 32-bit integer for Adobe Firefly API
+                        "default": 1,
+                        "min": 1,
+                        "max": 100000,
                         "control_after_generate": True,
-                        "tooltip": "Seed for reproducibility.",
+                        "tooltip": "Seed for reproducibility (1-100,000).",
                     },
                 ),
             },
@@ -939,7 +1036,7 @@ class FireflyGenerateSimilarNode:
                     prompt=prompt if prompt else None,
                     negativePrompt=negative_prompt if negative_prompt else None,
                     numVariations=num_variations,
-                    seeds=[seed] if seed > 0 else None,
+                    seeds=[seed],
                 )
 
                 # Submit async job
@@ -1050,11 +1147,11 @@ class FireflyGenerateObjectCompositeNode:
                 "seed": (
                     IO.INT,
                     {
-                        "default": 0,
-                        "min": 0,
-                        "max": 2147483647,  # Max 32-bit integer for Adobe Firefly API
+                        "default": 1,
+                        "min": 1,
+                        "max": 100000,
                         "control_after_generate": True,
-                        "tooltip": "Seed for reproducibility.",
+                        "tooltip": "Seed for reproducibility (1-100,000).",
                     },
                 ),
             },
@@ -1117,7 +1214,7 @@ class FireflyGenerateObjectCompositeNode:
                     prompt=prompt,
                     negativePrompt=negative_prompt if negative_prompt else None,
                     numVariations=num_variations,
-                    seeds=[seed] if seed > 0 else None,
+                    seeds=[seed],
                 )
 
                 # Submit async job
@@ -1192,7 +1289,8 @@ class FireflyGenerateObjectCompositeNode:
 class FireflyConsoleNode:
     """
     Display debug console output from Firefly API nodes.
-    Shows API requests, responses, and execution details.
+    Shows API requests, responses, and execution details in a terminal-style display.
+    Connect multiple debug log outputs to aggregate logs from different nodes.
     """
 
     RETURN_TYPES = ()
@@ -1204,14 +1302,42 @@ class FireflyConsoleNode:
     @classmethod
     def INPUT_TYPES(s):
         return {
-            "required": {
-                "debug_log": (IO.STRING, {"forceInput": True}),
+            "optional": {
+                "debug_log_1": (IO.STRING, {"forceInput": True}),
+                "debug_log_2": (IO.STRING, {"forceInput": True}),
+                "debug_log_3": (IO.STRING, {"forceInput": True}),
+                "debug_log_4": (IO.STRING, {"forceInput": True}),
+                "debug_log_5": (IO.STRING, {"forceInput": True}),
+                "debug_log_6": (IO.STRING, {"forceInput": True}),
+                "debug_log_7": (IO.STRING, {"forceInput": True}),
+                "debug_log_8": (IO.STRING, {"forceInput": True}),
             },
         }
 
-    def display(self, debug_log: str):
-        # Just return the log - ComfyUI will display it
-        return {"ui": {"text": [debug_log]}}
+    def display(self, **kwargs):
+        # Debug logging
+        logging.info(f"FireflyConsoleNode.display called with kwargs: {list(kwargs.keys())}")
+
+        # Combine all provided debug logs
+        logs = []
+        for key in sorted(kwargs.keys()):
+            if key in kwargs and kwargs[key]:
+                logging.info(f"Adding log from {key}, length: {len(kwargs[key])}")
+                logs.append(kwargs[key])
+
+        # Create terminal-style output
+        if logs:
+            combined_log = "\n\n".join(logs)
+        else:
+            combined_log = ""
+
+        # Prepend initialization message
+        terminal_output = "[INITIALIZED]\n\n" + combined_log if combined_log else "[INITIALIZED]\n\nNo debug logs connected"
+
+        logging.info(f"FireflyConsoleNode returning output, length: {len(terminal_output)}")
+
+        # Return as text - ComfyUI will display it
+        return {"ui": {"text": [terminal_output]}}
 
 
 # ============================================================================
