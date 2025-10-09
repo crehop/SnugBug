@@ -206,7 +206,7 @@ class LoadImageSetNode:
     INPUT_IS_LIST = True
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "load_images"
-    CATEGORY = "loaders"
+    CATEGORY = "Legacy/loaders"
     EXPERIMENTAL = True
     DESCRIPTION = "Loads a batch of images from a directory for training."
 
@@ -248,7 +248,7 @@ class LoadImageSetFromFolderNode:
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "load_images"
-    CATEGORY = "loaders"
+    CATEGORY = "Legacy/loaders"
     EXPERIMENTAL = True
     DESCRIPTION = "Loads a batch of images from a directory for training."
 
@@ -302,7 +302,7 @@ class LoadImageTextSetFromFolderNode:
 
     RETURN_TYPES = ("IMAGE", IO.CONDITIONING,)
     FUNCTION = "load_images"
-    CATEGORY = "loaders"
+    CATEGORY = "Legacy/loaders"
     EXPERIMENTAL = True
     DESCRIPTION = "Loads a batch of images and caption from a directory for training."
 
@@ -531,7 +531,7 @@ class TrainLoraNode:
     RETURN_TYPES = (IO.MODEL, IO.LORA_MODEL, IO.LOSS_MAP, IO.INT)
     RETURN_NAMES = ("model_with_lora", "lora", "loss", "steps")
     FUNCTION = "train"
-    CATEGORY = "training"
+    CATEGORY = "Legacy/training"
     EXPERIMENTAL = True
 
     def train(
@@ -723,7 +723,7 @@ class LoraModelLoader:
     OUTPUT_TOOLTIPS = ("The modified diffusion model.",)
     FUNCTION = "load_lora_model"
 
-    CATEGORY = "loaders"
+    CATEGORY = "Legacy/loaders"
     DESCRIPTION = "Load Trained LoRA weights from Train LoRA node."
     EXPERIMENTAL = True
 
@@ -770,7 +770,7 @@ class SaveLoRA:
 
     RETURN_TYPES = ()
     FUNCTION = "save"
-    CATEGORY = "loaders"
+    CATEGORY = "Legacy/loaders"
     EXPERIMENTAL = True
     OUTPUT_NODE = True
 
@@ -802,7 +802,7 @@ class LossGraphNode:
     RETURN_TYPES = ()
     FUNCTION = "plot_loss"
     OUTPUT_NODE = True
-    CATEGORY = "training"
+    CATEGORY = "Legacy/training"
     EXPERIMENTAL = True
     DESCRIPTION = "Plots the loss graph and saves it to the output directory."
 

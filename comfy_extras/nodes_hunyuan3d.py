@@ -21,7 +21,7 @@ class EmptyLatentHunyuan3Dv2:
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "generate"
 
-    CATEGORY = "latent/3d"
+    CATEGORY = "Legacy/latent/3d"
 
     def generate(self, resolution, batch_size):
         latent = torch.zeros([batch_size, 64, resolution], device=comfy.model_management.intermediate_device())
@@ -38,7 +38,7 @@ class Hunyuan3Dv2Conditioning:
 
     FUNCTION = "encode"
 
-    CATEGORY = "conditioning/video_models"
+    CATEGORY = "Legacy/conditioning/video_models"
 
     def encode(self, clip_vision_output):
         embeds = clip_vision_output.last_hidden_state
@@ -61,7 +61,7 @@ class Hunyuan3Dv2ConditioningMultiView:
 
     FUNCTION = "encode"
 
-    CATEGORY = "conditioning/video_models"
+    CATEGORY = "Legacy/conditioning/video_models"
 
     def encode(self, front=None, left=None, back=None, right=None):
         all_embeds = [front, left, back, right]
@@ -94,7 +94,7 @@ class VAEDecodeHunyuan3D:
     RETURN_TYPES = ("VOXEL",)
     FUNCTION = "decode"
 
-    CATEGORY = "latent/3d"
+    CATEGORY = "Legacy/latent/3d"
 
     def decode(self, vae, samples, num_chunks, octree_resolution):
         voxels = VOXEL(vae.decode(samples["samples"], vae_options={"num_chunks": num_chunks, "octree_resolution": octree_resolution}))
@@ -411,7 +411,7 @@ class VoxelToMeshBasic:
     RETURN_TYPES = ("MESH",)
     FUNCTION = "decode"
 
-    CATEGORY = "3d"
+    CATEGORY = "Legacy/3d"
 
     def decode(self, voxel, threshold):
         vertices = []
@@ -433,7 +433,7 @@ class VoxelToMesh:
     RETURN_TYPES = ("MESH",)
     FUNCTION = "decode"
 
-    CATEGORY = "3d"
+    CATEGORY = "Legacy/3d"
 
     def decode(self, voxel, algorithm, threshold):
         vertices = []
@@ -593,7 +593,7 @@ class SaveGLB:
 
     OUTPUT_NODE = True
 
-    CATEGORY = "3d"
+    CATEGORY = "Legacy/3d"
 
     def save(self, mesh, filename_prefix, prompt=None, extra_pnginfo=None):
         full_output_folder, filename, counter, subfolder, filename_prefix = folder_paths.get_save_image_path(filename_prefix, folder_paths.get_output_directory())

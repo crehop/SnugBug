@@ -13,7 +13,7 @@ class CLIPTextEncodeFlux:
     RETURN_TYPES = ("CONDITIONING",)
     FUNCTION = "encode"
 
-    CATEGORY = "advanced/conditioning/flux"
+    CATEGORY = "Legacy/advanced/conditioning/flux"
 
     def encode(self, clip, clip_l, t5xxl, guidance):
         tokens = clip.tokenize(clip_l)
@@ -32,7 +32,7 @@ class FluxGuidance:
     RETURN_TYPES = ("CONDITIONING",)
     FUNCTION = "append"
 
-    CATEGORY = "advanced/conditioning/flux"
+    CATEGORY = "Legacy/advanced/conditioning/flux"
 
     def append(self, conditioning, guidance):
         c = node_helpers.conditioning_set_values(conditioning, {"guidance": guidance})
@@ -49,7 +49,7 @@ class FluxDisableGuidance:
     RETURN_TYPES = ("CONDITIONING",)
     FUNCTION = "append"
 
-    CATEGORY = "advanced/conditioning/flux"
+    CATEGORY = "Legacy/advanced/conditioning/flux"
     DESCRIPTION = "This node completely disables the guidance embed on Flux and Flux like models"
 
     def append(self, conditioning):
@@ -88,7 +88,7 @@ class FluxKontextImageScale:
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "scale"
 
-    CATEGORY = "advanced/conditioning/flux"
+    CATEGORY = "Legacy/advanced/conditioning/flux"
     DESCRIPTION = "This node resizes the image to one that is more optimal for flux kontext."
 
     def scale(self, image):
@@ -112,7 +112,7 @@ class FluxKontextMultiReferenceLatentMethod:
     FUNCTION = "append"
     EXPERIMENTAL = True
 
-    CATEGORY = "advanced/conditioning/flux"
+    CATEGORY = "Legacy/advanced/conditioning/flux"
 
     def append(self, conditioning, reference_latents_method):
         if "uxo" in reference_latents_method or "uso" in reference_latents_method:

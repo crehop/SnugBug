@@ -21,7 +21,7 @@ class BasicScheduler:
                       }
                }
     RETURN_TYPES = ("SIGMAS",)
-    CATEGORY = "sampling/custom_sampling/schedulers"
+    CATEGORY = "Legacy/sampling/custom_sampling/schedulers"
 
     FUNCTION = "get_sigmas"
 
@@ -48,7 +48,7 @@ class KarrasScheduler:
                     }
                }
     RETURN_TYPES = ("SIGMAS",)
-    CATEGORY = "sampling/custom_sampling/schedulers"
+    CATEGORY = "Legacy/sampling/custom_sampling/schedulers"
 
     FUNCTION = "get_sigmas"
 
@@ -66,7 +66,7 @@ class ExponentialScheduler:
                     }
                }
     RETURN_TYPES = ("SIGMAS",)
-    CATEGORY = "sampling/custom_sampling/schedulers"
+    CATEGORY = "Legacy/sampling/custom_sampling/schedulers"
 
     FUNCTION = "get_sigmas"
 
@@ -85,7 +85,7 @@ class PolyexponentialScheduler:
                     }
                }
     RETURN_TYPES = ("SIGMAS",)
-    CATEGORY = "sampling/custom_sampling/schedulers"
+    CATEGORY = "Legacy/sampling/custom_sampling/schedulers"
 
     FUNCTION = "get_sigmas"
 
@@ -105,7 +105,7 @@ class LaplaceScheduler:
                     }
                }
     RETURN_TYPES = ("SIGMAS",)
-    CATEGORY = "sampling/custom_sampling/schedulers"
+    CATEGORY = "Legacy/sampling/custom_sampling/schedulers"
 
     FUNCTION = "get_sigmas"
 
@@ -124,7 +124,7 @@ class SDTurboScheduler:
                       }
                }
     RETURN_TYPES = ("SIGMAS",)
-    CATEGORY = "sampling/custom_sampling/schedulers"
+    CATEGORY = "Legacy/sampling/custom_sampling/schedulers"
 
     FUNCTION = "get_sigmas"
 
@@ -146,7 +146,7 @@ class BetaSamplingScheduler:
                       }
                }
     RETURN_TYPES = ("SIGMAS",)
-    CATEGORY = "sampling/custom_sampling/schedulers"
+    CATEGORY = "Legacy/sampling/custom_sampling/schedulers"
 
     FUNCTION = "get_sigmas"
 
@@ -165,7 +165,7 @@ class VPScheduler:
                     }
                }
     RETURN_TYPES = ("SIGMAS",)
-    CATEGORY = "sampling/custom_sampling/schedulers"
+    CATEGORY = "Legacy/sampling/custom_sampling/schedulers"
 
     FUNCTION = "get_sigmas"
 
@@ -183,7 +183,7 @@ class SplitSigmas:
                 }
     RETURN_TYPES = ("SIGMAS","SIGMAS")
     RETURN_NAMES = ("high_sigmas", "low_sigmas")
-    CATEGORY = "sampling/custom_sampling/sigmas"
+    CATEGORY = "Legacy/sampling/custom_sampling/sigmas"
 
     FUNCTION = "get_sigmas"
 
@@ -202,7 +202,7 @@ class SplitSigmasDenoise:
                 }
     RETURN_TYPES = ("SIGMAS","SIGMAS")
     RETURN_NAMES = ("high_sigmas", "low_sigmas")
-    CATEGORY = "sampling/custom_sampling/sigmas"
+    CATEGORY = "Legacy/sampling/custom_sampling/sigmas"
 
     FUNCTION = "get_sigmas"
 
@@ -221,7 +221,7 @@ class FlipSigmas:
                      }
                 }
     RETURN_TYPES = ("SIGMAS",)
-    CATEGORY = "sampling/custom_sampling/sigmas"
+    CATEGORY = "Legacy/sampling/custom_sampling/sigmas"
 
     FUNCTION = "get_sigmas"
 
@@ -243,7 +243,7 @@ class SetFirstSigma:
                     }
                }
     RETURN_TYPES = ("SIGMAS",)
-    CATEGORY = "sampling/custom_sampling/sigmas"
+    CATEGORY = "Legacy/sampling/custom_sampling/sigmas"
 
     FUNCTION = "set_first_sigma"
 
@@ -264,7 +264,7 @@ class ExtendIntermediateSigmas:
                     }
                }
     RETURN_TYPES = ("SIGMAS",)
-    CATEGORY = "sampling/custom_sampling/sigmas"
+    CATEGORY = "Legacy/sampling/custom_sampling/sigmas"
 
     FUNCTION = "extend"
 
@@ -315,7 +315,7 @@ class SamplingPercentToSigma:
 
     RETURN_TYPES = (IO.FLOAT,)
     RETURN_NAMES = ("sigma_value",)
-    CATEGORY = "sampling/custom_sampling/sigmas"
+    CATEGORY = "Legacy/sampling/custom_sampling/sigmas"
 
     FUNCTION = "get_sigma"
 
@@ -338,7 +338,7 @@ class KSamplerSelect:
                       }
                }
     RETURN_TYPES = ("SAMPLER",)
-    CATEGORY = "sampling/custom_sampling/samplers"
+    CATEGORY = "Legacy/sampling/custom_sampling/samplers"
 
     FUNCTION = "get_sampler"
 
@@ -356,7 +356,7 @@ class SamplerDPMPP_3M_SDE:
                       }
                }
     RETURN_TYPES = ("SAMPLER",)
-    CATEGORY = "sampling/custom_sampling/samplers"
+    CATEGORY = "Legacy/sampling/custom_sampling/samplers"
 
     FUNCTION = "get_sampler"
 
@@ -379,7 +379,7 @@ class SamplerDPMPP_2M_SDE:
                       }
                }
     RETURN_TYPES = ("SAMPLER",)
-    CATEGORY = "sampling/custom_sampling/samplers"
+    CATEGORY = "Legacy/sampling/custom_sampling/samplers"
 
     FUNCTION = "get_sampler"
 
@@ -403,7 +403,7 @@ class SamplerDPMPP_SDE:
                       }
                }
     RETURN_TYPES = ("SAMPLER",)
-    CATEGORY = "sampling/custom_sampling/samplers"
+    CATEGORY = "Legacy/sampling/custom_sampling/samplers"
 
     FUNCTION = "get_sampler"
 
@@ -424,7 +424,7 @@ class SamplerDPMPP_2S_Ancestral:
                       }
                }
     RETURN_TYPES = ("SAMPLER",)
-    CATEGORY = "sampling/custom_sampling/samplers"
+    CATEGORY = "Legacy/sampling/custom_sampling/samplers"
 
     FUNCTION = "get_sampler"
 
@@ -441,7 +441,7 @@ class SamplerEulerAncestral:
                       }
                }
     RETURN_TYPES = ("SAMPLER",)
-    CATEGORY = "sampling/custom_sampling/samplers"
+    CATEGORY = "Legacy/sampling/custom_sampling/samplers"
 
     FUNCTION = "get_sampler"
 
@@ -458,7 +458,7 @@ class SamplerEulerAncestralCFGPP:
                 "s_noise": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step":0.01, "round": False}),
             }}
     RETURN_TYPES = ("SAMPLER",)
-    CATEGORY = "sampling/custom_sampling/samplers"
+    CATEGORY = "Legacy/sampling/custom_sampling/samplers"
 
     FUNCTION = "get_sampler"
 
@@ -476,7 +476,7 @@ class SamplerLMS:
                       }
                }
     RETURN_TYPES = ("SAMPLER",)
-    CATEGORY = "sampling/custom_sampling/samplers"
+    CATEGORY = "Legacy/sampling/custom_sampling/samplers"
 
     FUNCTION = "get_sampler"
 
@@ -501,7 +501,7 @@ class SamplerDPMAdaptative:
                       }
                }
     RETURN_TYPES = ("SAMPLER",)
-    CATEGORY = "sampling/custom_sampling/samplers"
+    CATEGORY = "Legacy/sampling/custom_sampling/samplers"
 
     FUNCTION = "get_sampler"
 
@@ -528,7 +528,7 @@ class SamplerER_SDE(ComfyNodeABC):
         }
 
     RETURN_TYPES = (IO.SAMPLER,)
-    CATEGORY = "sampling/custom_sampling/samplers"
+    CATEGORY = "Legacy/sampling/custom_sampling/samplers"
 
     FUNCTION = "get_sampler"
 
@@ -569,7 +569,7 @@ class SamplerSASolver(ComfyNodeABC):
         }
 
     RETURN_TYPES = (IO.SAMPLER,)
-    CATEGORY = "sampling/custom_sampling/samplers"
+    CATEGORY = "Legacy/sampling/custom_sampling/samplers"
 
     FUNCTION = "get_sampler"
 
@@ -633,7 +633,7 @@ class SamplerCustom:
 
     FUNCTION = "sample"
 
-    CATEGORY = "sampling/custom_sampling"
+    CATEGORY = "Legacy/sampling/custom_sampling"
 
     def sample(self, model, add_noise, noise_seed, cfg, positive, negative, sampler, sigmas, latent_image):
         latent = latent_image
@@ -682,7 +682,7 @@ class BasicGuider:
     RETURN_TYPES = ("GUIDER",)
 
     FUNCTION = "get_guider"
-    CATEGORY = "sampling/custom_sampling/guiders"
+    CATEGORY = "Legacy/sampling/custom_sampling/guiders"
 
     def get_guider(self, model, conditioning):
         guider = Guider_Basic(model)
@@ -703,7 +703,7 @@ class CFGGuider:
     RETURN_TYPES = ("GUIDER",)
 
     FUNCTION = "get_guider"
-    CATEGORY = "sampling/custom_sampling/guiders"
+    CATEGORY = "Legacy/sampling/custom_sampling/guiders"
 
     def get_guider(self, model, positive, negative, cfg):
         guider = comfy.samplers.CFGGuider(model)
@@ -757,7 +757,7 @@ class DualCFGGuider:
     RETURN_TYPES = ("GUIDER",)
 
     FUNCTION = "get_guider"
-    CATEGORY = "sampling/custom_sampling/guiders"
+    CATEGORY = "Legacy/sampling/custom_sampling/guiders"
 
     def get_guider(self, model, cond1, cond2, negative, cfg_conds, cfg_cond2_negative, style):
         guider = Guider_DualCFG(model)
@@ -774,7 +774,7 @@ class DisableNoise:
 
     RETURN_TYPES = ("NOISE",)
     FUNCTION = "get_noise"
-    CATEGORY = "sampling/custom_sampling/noise"
+    CATEGORY = "Legacy/sampling/custom_sampling/noise"
 
     def get_noise(self):
         return (Noise_EmptyNoise(),)
@@ -815,7 +815,7 @@ class SamplerCustomAdvanced:
 
     FUNCTION = "sample"
 
-    CATEGORY = "sampling/custom_sampling"
+    CATEGORY = "Legacy/sampling/custom_sampling"
 
     def sample(self, noise, guider, sampler, sigmas, latent_image):
         latent = latent_image
@@ -859,7 +859,7 @@ class AddNoise:
 
     FUNCTION = "add_noise"
 
-    CATEGORY = "_for_testing/custom_sampling/noise"
+    CATEGORY = "Legacy/_for_testing/custom_sampling/noise"
 
     def add_noise(self, model, noise, sigmas, latent_image):
         if len(sigmas) == 0:

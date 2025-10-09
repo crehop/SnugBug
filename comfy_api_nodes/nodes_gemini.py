@@ -297,7 +297,7 @@ class GeminiNode(ComfyNodeABC):
     DESCRIPTION = "Generate text responses with Google's Gemini AI model. You can provide multiple types of inputs (text, images, audio, video) as context for generating more relevant and meaningful responses."
     RETURN_TYPES = ("STRING",)
     FUNCTION = "api_call"
-    CATEGORY = "api node/text/Gemini"
+    CATEGORY = "Legacy/api node/text/Gemini"
     API_NODE = True
 
     def create_video_parts(self, video_input: IO.VIDEO, **kwargs) -> list[GeminiPart]:
@@ -480,7 +480,7 @@ class GeminiInputFiles(ComfyNodeABC):
     DESCRIPTION = "Loads and prepares input files to include as inputs for Gemini LLM nodes. The files will be read by the Gemini model when generating a response. The contents of the text file count toward the token limit. 🛈 TIP: Can be chained together with other Gemini Input File nodes."
     RETURN_TYPES = ("GEMINI_INPUT_FILES",)
     FUNCTION = "prepare_files"
-    CATEGORY = "api node/text/Gemini"
+    CATEGORY = "Legacy/api node/text/Gemini"
 
     def create_file_part(self, file_path: str) -> GeminiPart:
         mime_type = (
@@ -589,7 +589,7 @@ class GeminiImage(ComfyNodeABC):
 
     RETURN_TYPES = (IO.IMAGE, IO.STRING)
     FUNCTION = "api_call"
-    CATEGORY = "api node/image/Gemini"
+    CATEGORY = "Legacy/api node/image/Gemini"
     DESCRIPTION = "Edit images synchronously via Google API."
     API_NODE = True
 

@@ -9,7 +9,7 @@ class SetUnionControlNetType:
                              "type": (["auto"] + list(UNION_CONTROLNET_TYPES.keys()),)
                              }}
 
-    CATEGORY = "conditioning/controlnet"
+    CATEGORY = "Legacy/conditioning/controlnet"
     RETURN_TYPES = ("CONTROL_NET",)
 
     FUNCTION = "set_controlnet_type"
@@ -40,7 +40,7 @@ class ControlNetInpaintingAliMamaApply(nodes.ControlNetApplyAdvanced):
 
     FUNCTION = "apply_inpaint_controlnet"
 
-    CATEGORY = "conditioning/controlnet"
+    CATEGORY = "Legacy/conditioning/controlnet"
 
     def apply_inpaint_controlnet(self, positive, negative, control_net, vae, image, mask, strength, start_percent, end_percent):
         extra_concat = []

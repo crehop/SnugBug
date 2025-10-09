@@ -21,7 +21,7 @@ class UpscaleModelLoader:
     RETURN_TYPES = ("UPSCALE_MODEL",)
     FUNCTION = "load_model"
 
-    CATEGORY = "loaders"
+    CATEGORY = "Legacy/loaders"
 
     def load_model(self, model_name):
         model_path = folder_paths.get_full_path_or_raise("upscale_models", model_name)
@@ -45,7 +45,7 @@ class ImageUpscaleWithModel:
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "upscale"
 
-    CATEGORY = "image/upscaling"
+    CATEGORY = "Legacy/image/upscaling"
 
     def upscale(self, upscale_model, image):
         device = model_management.get_torch_device()

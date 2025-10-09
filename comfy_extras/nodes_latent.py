@@ -21,7 +21,7 @@ class LatentAdd:
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "op"
 
-    CATEGORY = "latent/advanced"
+    CATEGORY = "Legacy/latent/advanced"
 
     def op(self, samples1, samples2):
         samples_out = samples1.copy()
@@ -41,7 +41,7 @@ class LatentSubtract:
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "op"
 
-    CATEGORY = "latent/advanced"
+    CATEGORY = "Legacy/latent/advanced"
 
     def op(self, samples1, samples2):
         samples_out = samples1.copy()
@@ -63,7 +63,7 @@ class LatentMultiply:
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "op"
 
-    CATEGORY = "latent/advanced"
+    CATEGORY = "Legacy/latent/advanced"
 
     def op(self, samples, multiplier):
         samples_out = samples.copy()
@@ -83,7 +83,7 @@ class LatentInterpolate:
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "op"
 
-    CATEGORY = "latent/advanced"
+    CATEGORY = "Legacy/latent/advanced"
 
     def op(self, samples1, samples2, ratio):
         samples_out = samples1.copy()
@@ -114,7 +114,7 @@ class LatentConcat:
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "op"
 
-    CATEGORY = "latent/advanced"
+    CATEGORY = "Legacy/latent/advanced"
 
     def op(self, samples1, samples2, dim):
         samples_out = samples1.copy()
@@ -149,7 +149,7 @@ class LatentCut:
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "op"
 
-    CATEGORY = "latent/advanced"
+    CATEGORY = "Legacy/latent/advanced"
 
     def op(self, samples, dim, index, amount):
         samples_out = samples.copy()
@@ -181,7 +181,7 @@ class LatentBatch:
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "batch"
 
-    CATEGORY = "latent/batch"
+    CATEGORY = "Legacy/latent/batch"
 
     def batch(self, samples1, samples2):
         samples_out = samples1.copy()
@@ -203,7 +203,7 @@ class LatentBatchSeedBehavior:
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "op"
 
-    CATEGORY = "latent/advanced"
+    CATEGORY = "Legacy/latent/advanced"
 
     def op(self, samples, seed_behavior):
         samples_out = samples.copy()
@@ -227,7 +227,7 @@ class LatentApplyOperation:
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "op"
 
-    CATEGORY = "latent/advanced/operations"
+    CATEGORY = "Legacy/latent/advanced/operations"
     EXPERIMENTAL = True
 
     def op(self, samples, operation):
@@ -246,7 +246,7 @@ class LatentApplyOperationCFG:
     RETURN_TYPES = ("MODEL",)
     FUNCTION = "patch"
 
-    CATEGORY = "latent/advanced/operations"
+    CATEGORY = "Legacy/latent/advanced/operations"
     EXPERIMENTAL = True
 
     def patch(self, model, operation):
@@ -272,7 +272,7 @@ class LatentOperationTonemapReinhard:
     RETURN_TYPES = ("LATENT_OPERATION",)
     FUNCTION = "op"
 
-    CATEGORY = "latent/advanced/operations"
+    CATEGORY = "Legacy/latent/advanced/operations"
     EXPERIMENTAL = True
 
     def op(self, multiplier):
@@ -320,7 +320,7 @@ class LatentOperationSharpen:
     RETURN_TYPES = ("LATENT_OPERATION",)
     FUNCTION = "op"
 
-    CATEGORY = "latent/advanced/operations"
+    CATEGORY = "Legacy/latent/advanced/operations"
     EXPERIMENTAL = True
 
     def op(self, sharpen_radius, sigma, alpha):

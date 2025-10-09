@@ -27,7 +27,7 @@ class EmptyLatentAudio:
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "generate"
 
-    CATEGORY = "latent/audio"
+    CATEGORY = "Legacy/latent/audio"
 
     def generate(self, seconds, batch_size):
         length = round((seconds * 44100 / 2048) / 2) * 2
@@ -48,7 +48,7 @@ class ConditioningStableAudio:
 
     FUNCTION = "append"
 
-    CATEGORY = "conditioning"
+    CATEGORY = "Legacy/conditioning"
 
     def append(self, positive, negative, seconds_start, seconds_total):
         positive = node_helpers.conditioning_set_values(positive, {"seconds_start": seconds_start, "seconds_total": seconds_total})
@@ -62,7 +62,7 @@ class VAEEncodeAudio:
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "encode"
 
-    CATEGORY = "latent/audio"
+    CATEGORY = "Legacy/latent/audio"
 
     def encode(self, vae, audio):
         sample_rate = audio["sample_rate"]
@@ -81,7 +81,7 @@ class VAEDecodeAudio:
     RETURN_TYPES = ("AUDIO",)
     FUNCTION = "decode"
 
-    CATEGORY = "latent/audio"
+    CATEGORY = "Legacy/latent/audio"
 
     def decode(self, vae, samples):
         audio = vae.decode(samples["samples"]).movedim(-1, 1)
@@ -211,7 +211,7 @@ class SaveAudio:
 
     OUTPUT_NODE = True
 
-    CATEGORY = "audio"
+    CATEGORY = "Legacy/audio"
 
     def save_flac(self, audio, filename_prefix="ComfyUI", format="flac", prompt=None, extra_pnginfo=None):
         return save_audio(self, audio, filename_prefix, format, prompt, extra_pnginfo)
@@ -236,7 +236,7 @@ class SaveAudioMP3:
 
     OUTPUT_NODE = True
 
-    CATEGORY = "audio"
+    CATEGORY = "Legacy/audio"
 
     def save_mp3(self, audio, filename_prefix="ComfyUI", format="mp3", prompt=None, extra_pnginfo=None, quality="128k"):
         return save_audio(self, audio, filename_prefix, format, prompt, extra_pnginfo, quality)
@@ -261,7 +261,7 @@ class SaveAudioOpus:
 
     OUTPUT_NODE = True
 
-    CATEGORY = "audio"
+    CATEGORY = "Legacy/audio"
 
     def save_opus(self, audio, filename_prefix="ComfyUI", format="opus", prompt=None, extra_pnginfo=None, quality="V3"):
         return save_audio(self, audio, filename_prefix, format, prompt, extra_pnginfo, quality)
@@ -322,7 +322,7 @@ class LoadAudio:
         files = folder_paths.filter_files_content_types(os.listdir(input_dir), ["audio", "video"])
         return {"required": {"audio": (sorted(files), {"audio_upload": True})}}
 
-    CATEGORY = "audio"
+    CATEGORY = "Legacy/audio"
 
     RETURN_TYPES = ("AUDIO", )
     FUNCTION = "load"
@@ -352,7 +352,7 @@ class RecordAudio:
     def INPUT_TYPES(s):
         return {"required": {"audio": ("AUDIO_RECORD", {})}}
 
-    CATEGORY = "audio"
+    CATEGORY = "Legacy/audio"
 
     RETURN_TYPES = ("AUDIO", )
     FUNCTION = "load"
@@ -378,7 +378,7 @@ class TrimAudioDuration:
 
     FUNCTION = "trim"
     RETURN_TYPES = ("AUDIO",)
-    CATEGORY = "audio"
+    CATEGORY = "Legacy/audio"
     DESCRIPTION = "Trim audio tensor into chosen time range."
 
     def trim(self, audio, start_index, duration):
@@ -411,7 +411,7 @@ class SplitAudioChannels:
     RETURN_TYPES = ("AUDIO", "AUDIO")
     RETURN_NAMES = ("left", "right")
     FUNCTION = "separate"
-    CATEGORY = "audio"
+    CATEGORY = "Legacy/audio"
     DESCRIPTION = "Separates the audio into left and right channels."
 
     def separate(self, audio):
@@ -453,7 +453,7 @@ class AudioConcat:
 
     RETURN_TYPES = ("AUDIO",)
     FUNCTION = "concat"
-    CATEGORY = "audio"
+    CATEGORY = "Legacy/audio"
     DESCRIPTION = "Concatenates the audio1 to audio2 in the specified direction."
 
     def concat(self, audio1, audio2, direction):
@@ -492,7 +492,7 @@ class AudioMerge:
 
     FUNCTION = "merge"
     RETURN_TYPES = ("AUDIO",)
-    CATEGORY = "audio"
+    CATEGORY = "Legacy/audio"
     DESCRIPTION = "Combine two audio tracks by overlaying their waveforms."
 
     def merge(self, audio1, audio2, merge_method):
@@ -542,7 +542,7 @@ class AudioAdjustVolume:
 
     RETURN_TYPES = ("AUDIO",)
     FUNCTION = "adjust_volume"
-    CATEGORY = "audio"
+    CATEGORY = "Legacy/audio"
 
     def adjust_volume(self, audio, volume):
         if volume == 0:
@@ -567,7 +567,7 @@ class EmptyAudio:
 
     RETURN_TYPES = ("AUDIO",)
     FUNCTION = "create_empty_audio"
-    CATEGORY = "audio"
+    CATEGORY = "Legacy/audio"
 
     def create_empty_audio(self, duration, sample_rate, channels):
         num_samples = int(round(duration * sample_rate))

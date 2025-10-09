@@ -15,7 +15,7 @@ class CLIPTextEncodeHunyuanDiT:
     RETURN_TYPES = ("CONDITIONING",)
     FUNCTION = "encode"
 
-    CATEGORY = "advanced/conditioning"
+    CATEGORY = "Legacy/advanced/conditioning"
 
     def encode(self, clip, bert, mt5xl):
         tokens = clip.tokenize(bert)
@@ -33,7 +33,7 @@ class EmptyHunyuanLatentVideo:
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "generate"
 
-    CATEGORY = "latent/video"
+    CATEGORY = "Legacy/latent/video"
 
     def generate(self, width, height, length, batch_size=1):
         latent = torch.zeros([batch_size, 16, ((length - 1) // 4) + 1, height // 8, width // 8], device=comfy.model_management.intermediate_device())
@@ -62,7 +62,7 @@ class TextEncodeHunyuanVideo_ImageToVideo:
     RETURN_TYPES = ("CONDITIONING",)
     FUNCTION = "encode"
 
-    CATEGORY = "advanced/conditioning"
+    CATEGORY = "Legacy/advanced/conditioning"
 
     def encode(self, clip, clip_vision_output, prompt, image_interleave):
         tokens = clip.tokenize(prompt, llama_template=PROMPT_TEMPLATE_ENCODE_VIDEO_I2V, image_embeds=clip_vision_output.mm_projected, image_interleave=image_interleave)
@@ -86,7 +86,7 @@ class HunyuanImageToVideo:
     RETURN_NAMES = ("positive", "latent")
     FUNCTION = "encode"
 
-    CATEGORY = "conditioning/video_models"
+    CATEGORY = "Legacy/conditioning/video_models"
 
     def encode(self, positive, vae, width, height, length, batch_size, guidance_type, start_image=None):
         latent = torch.zeros([batch_size, 16, ((length - 1) // 4) + 1, height // 8, width // 8], device=comfy.model_management.intermediate_device())
@@ -122,7 +122,7 @@ class EmptyHunyuanImageLatent:
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "generate"
 
-    CATEGORY = "latent"
+    CATEGORY = "Legacy/latent"
 
     def generate(self, width, height, batch_size=1):
         latent = torch.zeros([batch_size, 64, height // 32, width // 32], device=comfy.model_management.intermediate_device())

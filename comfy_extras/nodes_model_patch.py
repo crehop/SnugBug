@@ -198,7 +198,7 @@ class ModelPatchLoader:
     FUNCTION = "load_model_patch"
     EXPERIMENTAL = True
 
-    CATEGORY = "advanced/loaders"
+    CATEGORY = "Legacy/advanced/loaders"
 
     def load_model_patch(self, name):
         model_patch_path = folder_paths.get_full_path_or_raise("model_patches", name)
@@ -277,7 +277,7 @@ class QwenImageDiffsynthControlnet:
     FUNCTION = "diffsynth_controlnet"
     EXPERIMENTAL = True
 
-    CATEGORY = "advanced/loaders/qwen"
+    CATEGORY = "Legacy/advanced/loaders/qwen"
 
     def diffsynth_controlnet(self, model, model_patch, vae, image, strength, mask=None):
         model_patched = model.clone()
@@ -327,7 +327,7 @@ class USOStyleReference:
     FUNCTION = "apply_patch"
     EXPERIMENTAL = True
 
-    CATEGORY = "advanced/model_patches/flux"
+    CATEGORY = "Legacy/advanced/model_patches/flux"
 
     def apply_patch(self, model, model_patch, clip_vision_output):
         encoded_image = torch.stack((clip_vision_output.all_hidden_states[:, -20], clip_vision_output.all_hidden_states[:, -11], clip_vision_output.penultimate_hidden_states))

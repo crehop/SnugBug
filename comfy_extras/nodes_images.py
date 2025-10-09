@@ -33,7 +33,7 @@ class ImageCrop:
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "crop"
 
-    CATEGORY = "image/transform"
+    CATEGORY = "Legacy/image/transform"
 
     def crop(self, image, width, height, x, y):
         x = min(x, image.shape[2] - 1)
@@ -52,7 +52,7 @@ class RepeatImageBatch:
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "repeat"
 
-    CATEGORY = "image/batch"
+    CATEGORY = "Legacy/image/batch"
 
     def repeat(self, image, amount):
         s = image.repeat((amount, 1,1,1))
@@ -68,7 +68,7 @@ class ImageFromBatch:
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "frombatch"
 
-    CATEGORY = "image/batch"
+    CATEGORY = "Legacy/image/batch"
 
     def frombatch(self, image, batch_index, length):
         s_in = image
@@ -88,7 +88,7 @@ class ImageAddNoise:
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "repeat"
 
-    CATEGORY = "image"
+    CATEGORY = "Legacy/image"
 
     def repeat(self, image, seed, strength):
         generator = torch.manual_seed(seed)
@@ -121,7 +121,7 @@ class SaveAnimatedWEBP:
 
     OUTPUT_NODE = True
 
-    CATEGORY = "image/animation"
+    CATEGORY = "Legacy/image/animation"
 
     def save_images(self, images, fps, filename_prefix, lossless, quality, method, num_frames=0, prompt=None, extra_pnginfo=None):
         method = self.methods.get(method)
@@ -183,7 +183,7 @@ class SaveAnimatedPNG:
 
     OUTPUT_NODE = True
 
-    CATEGORY = "image/animation"
+    CATEGORY = "Legacy/image/animation"
 
     def save_images(self, images, fps, compress_level, filename_prefix="ComfyUI", prompt=None, extra_pnginfo=None):
         filename_prefix += self.prefix_append
@@ -258,7 +258,7 @@ class ImageStitch:
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "stitch"
-    CATEGORY = "image/transform"
+    CATEGORY = "Legacy/image/transform"
     DESCRIPTION = """
 Stitches image2 to image1 in the specified direction.
 If image2 is not provided, returns image1 unchanged.
@@ -439,7 +439,7 @@ class ResizeAndPadImage:
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "resize_and_pad"
-    CATEGORY = "image/transform"
+    CATEGORY = "Legacy/image/transform"
 
     def resize_and_pad(self, image, target_width, target_height, padding_color, interpolation):
         batch_size, orig_height, orig_width, channels = image.shape
@@ -484,7 +484,7 @@ class SaveSVGNode:
     RETURN_TYPES = ()
     DESCRIPTION = cleandoc(__doc__ or "")  # Handle potential None value
     FUNCTION = "save_svg"
-    CATEGORY = "image/save" # Changed
+    CATEGORY = "Legacy/image/save" # Changed
     OUTPUT_NODE = True
 
     @classmethod
@@ -569,7 +569,7 @@ class GetImageSize:
     RETURN_NAMES = ("width", "height", "batch_size")
     FUNCTION = "get_size"
 
-    CATEGORY = "image"
+    CATEGORY = "Legacy/image"
     DESCRIPTION = """Returns width and height of the image, and passes it through unchanged."""
 
     def get_size(self, image, unique_id=None) -> tuple[int, int]:
@@ -592,7 +592,7 @@ class ImageRotate:
     RETURN_TYPES = (IO.IMAGE,)
     FUNCTION = "rotate"
 
-    CATEGORY = "image/transform"
+    CATEGORY = "Legacy/image/transform"
 
     def rotate(self, image, rotation):
         rotate_by = 0
@@ -615,7 +615,7 @@ class ImageFlip:
     RETURN_TYPES = (IO.IMAGE,)
     FUNCTION = "flip"
 
-    CATEGORY = "image/transform"
+    CATEGORY = "Legacy/image/transform"
 
     def flip(self, image, flip_method):
         if flip_method.startswith("x"):
@@ -636,7 +636,7 @@ class ImageScaleToMaxDimension:
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "upscale"
 
-    CATEGORY = "image/upscaling"
+    CATEGORY = "Legacy/image/upscaling"
 
     def upscale(self, image, upscale_method, largest_size):
         height = image.shape[1]

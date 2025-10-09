@@ -15,7 +15,7 @@ class PreviewAny():
     FUNCTION = "main"
     OUTPUT_NODE = True
 
-    CATEGORY = "utils"
+    CATEGORY = "Legacy/utils"
 
     def main(self, source=None):
         value = 'None'

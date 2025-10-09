@@ -25,7 +25,7 @@ class SkipLayerGuidanceDiT:
 
     DESCRIPTION = "Generic version of SkipLayerGuidance node that can be used on every DiT model."
 
-    CATEGORY = "advanced/guidance"
+    CATEGORY = "Legacy/advanced/guidance"
 
     def skip_guidance(self, model, scale, start_percent, end_percent, double_layers="", single_layers="", rescaling_scale=0):
         # check if layer is comma separated integers
@@ -96,7 +96,7 @@ class SkipLayerGuidanceDiTSimple:
 
     DESCRIPTION = "Simple version of the SkipLayerGuidanceDiT node that only modifies the uncond pass."
 
-    CATEGORY = "advanced/guidance"
+    CATEGORY = "Legacy/advanced/guidance"
 
     def skip_guidance(self, model, start_percent, end_percent, double_layers="", single_layers=""):
         def skip(args, extra_args):

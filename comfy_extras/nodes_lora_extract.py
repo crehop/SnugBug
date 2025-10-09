@@ -89,7 +89,7 @@ class LoraSave:
     FUNCTION = "save"
     OUTPUT_NODE = True
 
-    CATEGORY = "_for_testing"
+    CATEGORY = "Legacy/_for_testing"
 
     def save(self, filename_prefix, rank, lora_type, bias_diff, model_diff=None, text_encoder_diff=None):
         if model_diff is None and text_encoder_diff is None:

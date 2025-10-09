@@ -37,7 +37,7 @@ class PairConditioningSetProperties:
     EXPERIMENTAL = True
     RETURN_TYPES = ("CONDITIONING", "CONDITIONING")
     RETURN_NAMES = ("positive", "negative")
-    CATEGORY = "advanced/hooks/cond pair"
+    CATEGORY = "Legacy/advanced/hooks/cond pair"
     FUNCTION = "set_properties"
 
     def set_properties(self, positive_NEW, negative_NEW,
@@ -72,7 +72,7 @@ class PairConditioningSetPropertiesAndCombine:
     EXPERIMENTAL = True
     RETURN_TYPES = ("CONDITIONING", "CONDITIONING")
     RETURN_NAMES = ("positive", "negative")
-    CATEGORY = "advanced/hooks/cond pair"
+    CATEGORY = "Legacy/advanced/hooks/cond pair"
     FUNCTION = "set_properties"
 
     def set_properties(self, positive, negative, positive_NEW, negative_NEW,
@@ -103,7 +103,7 @@ class ConditioningSetProperties:
 
     EXPERIMENTAL = True
     RETURN_TYPES = ("CONDITIONING",)
-    CATEGORY = "advanced/hooks/cond single"
+    CATEGORY = "Legacy/advanced/hooks/cond single"
     FUNCTION = "set_properties"
 
     def set_properties(self, cond_NEW,
@@ -135,7 +135,7 @@ class ConditioningSetPropertiesAndCombine:
 
     EXPERIMENTAL = True
     RETURN_TYPES = ("CONDITIONING",)
-    CATEGORY = "advanced/hooks/cond single"
+    CATEGORY = "Legacy/advanced/hooks/cond single"
     FUNCTION = "set_properties"
 
     def set_properties(self, cond, cond_NEW,
@@ -163,7 +163,7 @@ class PairConditioningCombine:
     EXPERIMENTAL = True
     RETURN_TYPES = ("CONDITIONING", "CONDITIONING")
     RETURN_NAMES = ("positive", "negative")
-    CATEGORY = "advanced/hooks/cond pair"
+    CATEGORY = "Legacy/advanced/hooks/cond pair"
     FUNCTION = "combine"
 
     def combine(self, positive_A, negative_A, positive_B, negative_B):
@@ -190,7 +190,7 @@ class PairConditioningSetDefaultAndCombine:
     EXPERIMENTAL = True
     RETURN_TYPES = ("CONDITIONING", "CONDITIONING")
     RETURN_NAMES = ("positive", "negative")
-    CATEGORY = "advanced/hooks/cond pair"
+    CATEGORY = "Legacy/advanced/hooks/cond pair"
     FUNCTION = "set_default_and_combine"
 
     def set_default_and_combine(self, positive, negative, positive_DEFAULT, negative_DEFAULT,
@@ -216,7 +216,7 @@ class ConditioningSetDefaultAndCombine:
 
     EXPERIMENTAL = True
     RETURN_TYPES = ("CONDITIONING",)
-    CATEGORY = "advanced/hooks/cond single"
+    CATEGORY = "Legacy/advanced/hooks/cond single"
     FUNCTION = "set_default_and_combine"
 
     def set_default_and_combine(self, cond, cond_DEFAULT,
@@ -243,7 +243,7 @@ class SetClipHooks:
 
     EXPERIMENTAL = True
     RETURN_TYPES = ("CLIP",)
-    CATEGORY = "advanced/hooks/clip"
+    CATEGORY = "Legacy/advanced/hooks/clip"
     FUNCTION = "apply_hooks"
 
     def apply_hooks(self, clip: CLIP, schedule_clip: bool, apply_to_conds: bool, hooks: comfy.hooks.HookGroup=None):
@@ -273,7 +273,7 @@ class ConditioningTimestepsRange:
     EXPERIMENTAL = True
     RETURN_TYPES = ("TIMESTEPS_RANGE", "TIMESTEPS_RANGE", "TIMESTEPS_RANGE")
     RETURN_NAMES = ("TIMESTEPS_RANGE", "BEFORE_RANGE", "AFTER_RANGE")
-    CATEGORY = "advanced/hooks"
+    CATEGORY = "Legacy/advanced/hooks"
     FUNCTION = "create_range"
 
     def create_range(self, start_percent: float, end_percent: float):
@@ -306,7 +306,7 @@ class CreateHookLora:
 
     EXPERIMENTAL = True
     RETURN_TYPES = ("HOOKS",)
-    CATEGORY = "advanced/hooks/create"
+    CATEGORY = "Legacy/advanced/hooks/create"
     FUNCTION = "create_hook"
 
     def create_hook(self, lora_name: str, strength_model: float, strength_clip: float, prev_hooks: comfy.hooks.HookGroup=None):
@@ -351,7 +351,7 @@ class CreateHookLoraModelOnly(CreateHookLora):
 
     EXPERIMENTAL = True
     RETURN_TYPES = ("HOOKS",)
-    CATEGORY = "advanced/hooks/create"
+    CATEGORY = "Legacy/advanced/hooks/create"
     FUNCTION = "create_hook_model_only"
 
     def create_hook_model_only(self, lora_name: str, strength_model: float, prev_hooks: comfy.hooks.HookGroup=None):
@@ -381,7 +381,7 @@ class CreateHookModelAsLora:
 
     EXPERIMENTAL = True
     RETURN_TYPES = ("HOOKS",)
-    CATEGORY = "advanced/hooks/create"
+    CATEGORY = "Legacy/advanced/hooks/create"
     FUNCTION = "create_hook"
 
     def create_hook(self, ckpt_name: str, strength_model: float, strength_clip: float,
@@ -429,7 +429,7 @@ class CreateHookModelAsLoraModelOnly(CreateHookModelAsLora):
 
     EXPERIMENTAL = True
     RETURN_TYPES = ("HOOKS",)
-    CATEGORY = "advanced/hooks/create"
+    CATEGORY = "Legacy/advanced/hooks/create"
     FUNCTION = "create_hook_model_only"
 
     def create_hook_model_only(self, ckpt_name: str, strength_model: float,
@@ -458,7 +458,7 @@ class SetHookKeyframes:
 
     EXPERIMENTAL = True
     RETURN_TYPES = ("HOOKS",)
-    CATEGORY = "advanced/hooks/scheduling"
+    CATEGORY = "Legacy/advanced/hooks/scheduling"
     FUNCTION = "set_hook_keyframes"
 
     def set_hook_keyframes(self, hooks: comfy.hooks.HookGroup, hook_kf: comfy.hooks.HookKeyframeGroup=None):
@@ -485,7 +485,7 @@ class CreateHookKeyframe:
     EXPERIMENTAL = True
     RETURN_TYPES = ("HOOK_KEYFRAMES",)
     RETURN_NAMES = ("HOOK_KF",)
-    CATEGORY = "advanced/hooks/scheduling"
+    CATEGORY = "Legacy/advanced/hooks/scheduling"
     FUNCTION = "create_hook_keyframe"
 
     def create_hook_keyframe(self, strength_mult: float, start_percent: float, prev_hook_kf: comfy.hooks.HookKeyframeGroup=None):
@@ -519,7 +519,7 @@ class CreateHookKeyframesInterpolated:
     EXPERIMENTAL = True
     RETURN_TYPES = ("HOOK_KEYFRAMES",)
     RETURN_NAMES = ("HOOK_KF",)
-    CATEGORY = "advanced/hooks/scheduling"
+    CATEGORY = "Legacy/advanced/hooks/scheduling"
     FUNCTION = "create_hook_keyframes"
 
     def create_hook_keyframes(self, strength_start: float, strength_end: float, interpolation: str,
@@ -563,7 +563,7 @@ class CreateHookKeyframesFromFloats:
     EXPERIMENTAL = True
     RETURN_TYPES = ("HOOK_KEYFRAMES",)
     RETURN_NAMES = ("HOOK_KF",)
-    CATEGORY = "advanced/hooks/scheduling"
+    CATEGORY = "Legacy/advanced/hooks/scheduling"
     FUNCTION = "create_hook_keyframes"
 
     def create_hook_keyframes(self, floats_strength: Union[float, list[float]],
@@ -607,7 +607,7 @@ class SetModelHooksOnCond:
 
     EXPERIMENTAL = True
     RETURN_TYPES = ("CONDITIONING",)
-    CATEGORY = "advanced/hooks/manual"
+    CATEGORY = "Legacy/advanced/hooks/manual"
     FUNCTION = "attach_hook"
 
     def attach_hook(self, conditioning, hooks: comfy.hooks.HookGroup):
@@ -633,7 +633,7 @@ class CombineHooks:
 
     EXPERIMENTAL = True
     RETURN_TYPES = ("HOOKS",)
-    CATEGORY = "advanced/hooks/combine"
+    CATEGORY = "Legacy/advanced/hooks/combine"
     FUNCTION = "combine_hooks"
 
     def combine_hooks(self,
@@ -660,7 +660,7 @@ class CombineHooksFour:
 
     EXPERIMENTAL = True
     RETURN_TYPES = ("HOOKS",)
-    CATEGORY = "advanced/hooks/combine"
+    CATEGORY = "Legacy/advanced/hooks/combine"
     FUNCTION = "combine_hooks"
 
     def combine_hooks(self,
@@ -693,7 +693,7 @@ class CombineHooksEight:
 
     EXPERIMENTAL = True
     RETURN_TYPES = ("HOOKS",)
-    CATEGORY = "advanced/hooks/combine"
+    CATEGORY = "Legacy/advanced/hooks/combine"
     FUNCTION = "combine_hooks"
 
     def combine_hooks(self,

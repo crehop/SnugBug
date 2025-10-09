@@ -104,7 +104,7 @@ class HypernetworkLoader:
     RETURN_TYPES = ("MODEL",)
     FUNCTION = "load_hypernetwork"
 
-    CATEGORY = "loaders"
+    CATEGORY = "Legacy/loaders"
 
     def load_hypernetwork(self, model, hypernetwork_name, strength):
         hypernetwork_path = folder_paths.get_full_path_or_raise("hypernetworks", hypernetwork_name)

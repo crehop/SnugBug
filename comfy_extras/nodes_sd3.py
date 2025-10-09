@@ -14,7 +14,7 @@ class TripleCLIPLoader:
     RETURN_TYPES = ("CLIP",)
     FUNCTION = "load_clip"
 
-    CATEGORY = "advanced/loaders"
+    CATEGORY = "Legacy/advanced/loaders"
 
     DESCRIPTION = "[Recipes]\n\nsd3: clip-l, clip-g, t5"
 
@@ -38,7 +38,7 @@ class EmptySD3LatentImage:
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "generate"
 
-    CATEGORY = "latent/sd3"
+    CATEGORY = "Legacy/latent/sd3"
 
     def generate(self, width, height, batch_size=1):
         latent = torch.zeros([batch_size, 16, height // 8, width // 8], device=self.device)
@@ -58,7 +58,7 @@ class CLIPTextEncodeSD3:
     RETURN_TYPES = ("CONDITIONING",)
     FUNCTION = "encode"
 
-    CATEGORY = "advanced/conditioning"
+    CATEGORY = "Legacy/advanced/conditioning"
 
     def encode(self, clip, clip_l, clip_g, t5xxl, empty_padding):
         no_padding = empty_padding == "none"
@@ -97,7 +97,7 @@ class ControlNetApplySD3(nodes.ControlNetApplyAdvanced):
                              "start_percent": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.001}),
                              "end_percent": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.001})
                              }}
-    CATEGORY = "conditioning/controlnet"
+    CATEGORY = "Legacy/conditioning/controlnet"
     DEPRECATED = True
 
 
@@ -118,7 +118,7 @@ class SkipLayerGuidanceSD3(comfy_extras.nodes_slg.SkipLayerGuidanceDiT):
     RETURN_TYPES = ("MODEL",)
     FUNCTION = "skip_guidance_sd3"
 
-    CATEGORY = "advanced/guidance"
+    CATEGORY = "Legacy/advanced/guidance"
 
     def skip_guidance_sd3(self, model, layers, scale, start_percent, end_percent):
         return self.skip_guidance(model=model, scale=scale, start_percent=start_percent, end_percent=end_percent, double_layers=layers)

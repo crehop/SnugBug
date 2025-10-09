@@ -64,7 +64,7 @@ class LatentCompositeMasked:
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "composite"
 
-    CATEGORY = "latent"
+    CATEGORY = "Legacy/latent"
 
     def composite(self, destination, source, x, y, resize_source, mask = None):
         output = destination.copy()
@@ -91,7 +91,7 @@ class ImageCompositeMasked:
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "composite"
 
-    CATEGORY = "image"
+    CATEGORY = "Legacy/image"
 
     def composite(self, destination, source, x, y, resize_source, mask = None):
         destination, source = node_helpers.image_alpha_fix(destination, source)
@@ -108,7 +108,7 @@ class MaskToImage:
                 }
         }
 
-    CATEGORY = "mask"
+    CATEGORY = "Legacy/mask"
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "mask_to_image"
@@ -127,7 +127,7 @@ class ImageToMask:
                 }
         }
 
-    CATEGORY = "mask"
+    CATEGORY = "Legacy/mask"
 
     RETURN_TYPES = ("MASK",)
     FUNCTION = "image_to_mask"
@@ -147,7 +147,7 @@ class ImageColorToMask:
                 }
         }
 
-    CATEGORY = "mask"
+    CATEGORY = "Legacy/mask"
 
     RETURN_TYPES = ("MASK",)
     FUNCTION = "image_to_mask"
@@ -169,7 +169,7 @@ class SolidMask:
             }
         }
 
-    CATEGORY = "mask"
+    CATEGORY = "Legacy/mask"
 
     RETURN_TYPES = ("MASK",)
 
@@ -188,7 +188,7 @@ class InvertMask:
             }
         }
 
-    CATEGORY = "mask"
+    CATEGORY = "Legacy/mask"
 
     RETURN_TYPES = ("MASK",)
 
@@ -211,7 +211,7 @@ class CropMask:
             }
         }
 
-    CATEGORY = "mask"
+    CATEGORY = "Legacy/mask"
 
     RETURN_TYPES = ("MASK",)
 
@@ -235,7 +235,7 @@ class MaskComposite:
             }
         }
 
-    CATEGORY = "mask"
+    CATEGORY = "Legacy/mask"
 
     RETURN_TYPES = ("MASK",)
 
@@ -282,7 +282,7 @@ class FeatherMask:
             }
         }
 
-    CATEGORY = "mask"
+    CATEGORY = "Legacy/mask"
 
     RETURN_TYPES = ("MASK",)
 
@@ -325,7 +325,7 @@ class GrowMask:
             },
         }
 
-    CATEGORY = "mask"
+    CATEGORY = "Legacy/mask"
 
     RETURN_TYPES = ("MASK",)
 
@@ -359,7 +359,7 @@ class ThresholdMask:
                 }
         }
 
-    CATEGORY = "mask"
+    CATEGORY = "Legacy/mask"
 
     RETURN_TYPES = ("MASK",)
     FUNCTION = "image_to_mask"
@@ -386,7 +386,7 @@ class MaskPreview(nodes.SaveImage):
         }
 
     FUNCTION = "execute"
-    CATEGORY = "mask"
+    CATEGORY = "Legacy/mask"
 
     def execute(self, mask, filename_prefix="ComfyUI", prompt=None, extra_pnginfo=None):
         preview = mask.reshape((-1, 1, mask.shape[-2], mask.shape[-1])).movedim(1, -1).expand(-1, -1, -1, 3)

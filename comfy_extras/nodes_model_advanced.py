@@ -59,7 +59,7 @@ class ModelSamplingDiscrete:
     RETURN_TYPES = ("MODEL",)
     FUNCTION = "patch"
 
-    CATEGORY = "advanced/model"
+    CATEGORY = "Legacy/advanced/model"
 
     def patch(self, model, sampling, zsnr):
         m = model.clone()
@@ -95,7 +95,7 @@ class ModelSamplingStableCascade:
     RETURN_TYPES = ("MODEL",)
     FUNCTION = "patch"
 
-    CATEGORY = "advanced/model"
+    CATEGORY = "Legacy/advanced/model"
 
     def patch(self, model, shift):
         m = model.clone()
@@ -121,7 +121,7 @@ class ModelSamplingSD3:
     RETURN_TYPES = ("MODEL",)
     FUNCTION = "patch"
 
-    CATEGORY = "advanced/model"
+    CATEGORY = "Legacy/advanced/model"
 
     def patch(self, model, shift, multiplier=1000):
         m = model.clone()
@@ -162,7 +162,7 @@ class ModelSamplingFlux:
     RETURN_TYPES = ("MODEL",)
     FUNCTION = "patch"
 
-    CATEGORY = "advanced/model"
+    CATEGORY = "Legacy/advanced/model"
 
     def patch(self, model, max_shift, base_shift, width, height):
         m = model.clone()
@@ -197,7 +197,7 @@ class ModelSamplingContinuousEDM:
     RETURN_TYPES = ("MODEL",)
     FUNCTION = "patch"
 
-    CATEGORY = "advanced/model"
+    CATEGORY = "Legacy/advanced/model"
 
     def patch(self, model, sampling, sigma_max, sigma_min):
         m = model.clone()
@@ -242,7 +242,7 @@ class ModelSamplingContinuousV:
     RETURN_TYPES = ("MODEL",)
     FUNCTION = "patch"
 
-    CATEGORY = "advanced/model"
+    CATEGORY = "Legacy/advanced/model"
 
     def patch(self, model, sampling, sigma_max, sigma_min):
         m = model.clone()
@@ -268,7 +268,7 @@ class RescaleCFG:
     RETURN_TYPES = ("MODEL",)
     FUNCTION = "patch"
 
-    CATEGORY = "advanced/model"
+    CATEGORY = "Legacy/advanced/model"
 
     def patch(self, model, multiplier):
         def rescale_cfg(args):
@@ -308,7 +308,7 @@ class ModelComputeDtype:
     RETURN_TYPES = ("MODEL",)
     FUNCTION = "patch"
 
-    CATEGORY = "advanced/debug/model"
+    CATEGORY = "Legacy/advanced/debug/model"
 
     def patch(self, model, dtype):
         m = model.clone()

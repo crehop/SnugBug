@@ -40,7 +40,7 @@ class Load3D():
     FUNCTION = "process"
     EXPERIMENTAL = True
 
-    CATEGORY = "3d"
+    CATEGORY = "Legacy/3d"
 
     def process(self, model_file, image, **kwargs):
         image_path = folder_paths.get_annotated_filepath(image['image'])
@@ -92,7 +92,7 @@ class Load3DAnimation():
     FUNCTION = "process"
     EXPERIMENTAL = True
 
-    CATEGORY = "3d"
+    CATEGORY = "Legacy/3d"
 
     def process(self, model_file, image, **kwargs):
         image_path = folder_paths.get_annotated_filepath(image['image'])
@@ -126,7 +126,7 @@ class Preview3D():
     OUTPUT_NODE = True
     RETURN_TYPES = ()
 
-    CATEGORY = "3d"
+    CATEGORY = "Legacy/3d"
 
     FUNCTION = "process"
     EXPERIMENTAL = True
@@ -153,7 +153,7 @@ class Preview3DAnimation():
     OUTPUT_NODE = True
     RETURN_TYPES = ()
 
-    CATEGORY = "3d"
+    CATEGORY = "Legacy/3d"
 
     FUNCTION = "process"
     EXPERIMENTAL = True
