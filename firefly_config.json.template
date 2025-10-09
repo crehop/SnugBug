@@ -1,0 +1,6 @@
+{
+  "adobe_client_id": "YOUR_ADOBE_CLIENT_ID_HERE",
+  "adobe_client_secret": "YOUR_ADOBE_CLIENT_SECRET_HERE",
+  "adobe_api_key": "YOUR_ADOBE_API_KEY_HERE",
+  "note": "Fill in your Adobe Firefly API credentials. Get them from https://developer.adobe.com/console"
+}

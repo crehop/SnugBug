@@ -337,6 +337,7 @@ async def init_builtin_api_nodes():
         "nodes_bytedance.py",
         "nodes_luma.py",
         "nodes_recraft.py",
+        "nodes_firefly.py",
         "nodes_pixverse.py",
         "nodes_stability.py",
         "nodes_pika.py",
