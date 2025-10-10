@@ -162,7 +162,7 @@ class OpenAIDalle2(ComfyNodeABC):
 
     RETURN_TYPES = (IO.IMAGE,)
     FUNCTION = "api_call"
-    CATEGORY = "Legacy/api node/image/OpenAI"
+    CATEGORY = "api node/image/OpenAI"
     DESCRIPTION = cleandoc(__doc__ or "")
     API_NODE = True
 
@@ -310,7 +310,7 @@ class OpenAIDalle3(ComfyNodeABC):
 
     RETURN_TYPES = (IO.IMAGE,)
     FUNCTION = "api_call"
-    CATEGORY = "Legacy/api node/image/OpenAI"
+    CATEGORY = "api node/image/OpenAI"
     DESCRIPTION = cleandoc(__doc__ or "")
     API_NODE = True
 
@@ -445,7 +445,7 @@ class OpenAIGPTImage1(ComfyNodeABC):
 
     RETURN_TYPES = (IO.IMAGE,)
     FUNCTION = "api_call"
-    CATEGORY = "Legacy/api node/image/OpenAI"
+    CATEGORY = "api node/image/OpenAI"
     DESCRIPTION = cleandoc(__doc__ or "")
     API_NODE = True
 
@@ -546,7 +546,7 @@ class OpenAITextNode(ComfyNodeABC):
 
     RETURN_TYPES = (IO.STRING,)
     FUNCTION = "api_call"
-    CATEGORY = "Legacy/api node/text/OpenAI"
+    CATEGORY = "api node/text/OpenAI"
     API_NODE = True
 
 
@@ -901,7 +901,7 @@ class OpenAIInputFiles(ComfyNodeABC):
     DESCRIPTION = "Loads and prepares input files (text, pdf, etc.) to include as inputs for the OpenAI Chat Node. The files will be read by the OpenAI model when generating a response. 🛈 TIP: Can be chained together with other OpenAI Input File nodes."
     RETURN_TYPES = ("OPENAI_INPUT_FILES",)
     FUNCTION = "prepare_files"
-    CATEGORY = "Legacy/api node/text/OpenAI"
+    CATEGORY = "api node/text/OpenAI"
 
     def create_input_file_content(self, file_path: str) -> InputFileContent:
         return InputFileContent(
@@ -930,7 +930,7 @@ class OpenAIChatConfig(ComfyNodeABC):
     DESCRIPTION = (
         "Allows specifying advanced configuration options for the OpenAI Chat Nodes."
     )
-    CATEGORY = "Legacy/api node/text/OpenAI"
+    CATEGORY = "api node/text/OpenAI"
 
     @classmethod
     def INPUT_TYPES(cls) -> InputTypeDict:

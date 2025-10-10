@@ -17,7 +17,7 @@ class EmptyLTXVLatentVideo(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="EmptyLTXVLatentVideo",
-            category="latent/video/ltxv",
+            category="Legacy/latent/video/ltxv",
             inputs=[
                 io.Int.Input("width", default=768, min=64, max=nodes.MAX_RESOLUTION, step=32),
                 io.Int.Input("height", default=512, min=64, max=nodes.MAX_RESOLUTION, step=32),
@@ -41,7 +41,7 @@ class LTXVImgToVideo(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="LTXVImgToVideo",
-            category="conditioning/video_models",
+            category="Legacy/conditioning/video_models",
             inputs=[
                 io.Conditioning.Input("positive"),
                 io.Conditioning.Input("negative"),
@@ -117,7 +117,7 @@ class LTXVAddGuide(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="LTXVAddGuide",
-            category="conditioning/video_models",
+            category="Legacy/conditioning/video_models",
             inputs=[
                 io.Conditioning.Input("positive"),
                 io.Conditioning.Input("negative"),
@@ -275,7 +275,7 @@ class LTXVCropGuides(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="LTXVCropGuides",
-            category="conditioning/video_models",
+            category="Legacy/conditioning/video_models",
             inputs=[
                 io.Conditioning.Input("positive"),
                 io.Conditioning.Input("negative"),
@@ -313,7 +313,7 @@ class LTXVConditioning(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="LTXVConditioning",
-            category="conditioning/video_models",
+            category="Legacy/conditioning/video_models",
             inputs=[
                 io.Conditioning.Input("positive"),
                 io.Conditioning.Input("negative"),
@@ -337,7 +337,7 @@ class ModelSamplingLTXV(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="ModelSamplingLTXV",
-            category="advanced/model",
+            category="Legacy/advanced/model",
             inputs=[
                 io.Model.Input("model"),
                 io.Float.Input("max_shift", default=2.05, min=0.0, max=100.0, step=0.01),
@@ -382,7 +382,7 @@ class LTXVScheduler(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="LTXVScheduler",
-            category="sampling/custom_sampling/schedulers",
+            category="Legacy/sampling/custom_sampling/schedulers",
             inputs=[
                 io.Int.Input("steps", default=20, min=1, max=10000),
                 io.Float.Input("max_shift", default=2.05, min=0.0, max=100.0, step=0.01),
@@ -486,7 +486,7 @@ class LTXVPreprocess(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="LTXVPreprocess",
-            category="image",
+            category="Legacy/image",
             inputs=[
                 io.Image.Input("image"),
                 io.Int.Input(

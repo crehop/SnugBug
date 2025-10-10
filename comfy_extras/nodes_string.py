@@ -10,7 +10,7 @@ class StringConcatenate(io.ComfyNode):
         return io.Schema(
             node_id="StringConcatenate",
             display_name="Concatenate",
-            category="utils/string",
+            category="Legacy/utils/string",
             inputs=[
                 io.String.Input("string_a", multiline=True),
                 io.String.Input("string_b", multiline=True),
@@ -32,7 +32,7 @@ class StringSubstring(io.ComfyNode):
         return io.Schema(
             node_id="StringSubstring",
             display_name="Substring",
-            category="utils/string",
+            category="Legacy/utils/string",
             inputs=[
                 io.String.Input("string", multiline=True),
                 io.Int.Input("start"),
@@ -54,7 +54,7 @@ class StringLength(io.ComfyNode):
         return io.Schema(
             node_id="StringLength",
             display_name="Length",
-            category="utils/string",
+            category="Legacy/utils/string",
             inputs=[
                 io.String.Input("string", multiline=True),
             ],
@@ -74,7 +74,7 @@ class CaseConverter(io.ComfyNode):
         return io.Schema(
             node_id="CaseConverter",
             display_name="Case Converter",
-            category="utils/string",
+            category="Legacy/utils/string",
             inputs=[
                 io.String.Input("string", multiline=True),
                 io.Combo.Input("mode", options=["UPPERCASE", "lowercase", "Capitalize", "Title Case"]),
@@ -106,7 +106,7 @@ class StringTrim(io.ComfyNode):
         return io.Schema(
             node_id="StringTrim",
             display_name="Trim",
-            category="utils/string",
+            category="Legacy/utils/string",
             inputs=[
                 io.String.Input("string", multiline=True),
                 io.Combo.Input("mode", options=["Both", "Left", "Right"]),
@@ -136,7 +136,7 @@ class StringReplace(io.ComfyNode):
         return io.Schema(
             node_id="StringReplace",
             display_name="Replace",
-            category="utils/string",
+            category="Legacy/utils/string",
             inputs=[
                 io.String.Input("string", multiline=True),
                 io.String.Input("find", multiline=True),
@@ -158,7 +158,7 @@ class StringContains(io.ComfyNode):
         return io.Schema(
             node_id="StringContains",
             display_name="Contains",
-            category="utils/string",
+            category="Legacy/utils/string",
             inputs=[
                 io.String.Input("string", multiline=True),
                 io.String.Input("substring", multiline=True),
@@ -185,7 +185,7 @@ class StringCompare(io.ComfyNode):
         return io.Schema(
             node_id="StringCompare",
             display_name="Compare",
-            category="utils/string",
+            category="Legacy/utils/string",
             inputs=[
                 io.String.Input("string_a", multiline=True),
                 io.String.Input("string_b", multiline=True),
@@ -220,7 +220,7 @@ class RegexMatch(io.ComfyNode):
         return io.Schema(
             node_id="RegexMatch",
             display_name="Regex Match",
-            category="utils/string",
+            category="Legacy/utils/string",
             inputs=[
                 io.String.Input("string", multiline=True),
                 io.String.Input("regex_pattern", multiline=True),
@@ -260,7 +260,7 @@ class RegexExtract(io.ComfyNode):
         return io.Schema(
             node_id="RegexExtract",
             display_name="Regex Extract",
-            category="utils/string",
+            category="Legacy/utils/string",
             inputs=[
                 io.String.Input("string", multiline=True),
                 io.String.Input("regex_pattern", multiline=True),
@@ -334,7 +334,7 @@ class RegexReplace(io.ComfyNode):
         return io.Schema(
             node_id="RegexReplace",
             display_name="Regex Replace",
-            category="utils/string",
+            category="Legacy/utils/string",
             description="Find and replace text using regex patterns.",
             inputs=[
                 io.String.Input("string", multiline=True),

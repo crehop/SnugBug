@@ -33,7 +33,7 @@ class TCFG(io.ComfyNode):
         return io.Schema(
             node_id="TCFG",
             display_name="Tangential Damping CFG",
-            category="advanced/guidance",
+            category="Legacy/advanced/guidance",
             description="TCFG – Tangential Damping CFG (2503.18137)\n\nRefine the uncond (negative) to align with the cond (positive) for improving quality.",
             inputs=[
                 io.Model.Input("model"),

@@ -25,7 +25,7 @@ class PerpNeg(io.ComfyNode):
         return io.Schema(
             node_id="PerpNeg",
             display_name="Perp-Neg (DEPRECATED by PerpNegGuider)",
-            category="_for_testing",
+            category="Legacy/_for_testing",
             inputs=[
                 io.Model.Input("model"),
                 io.Conditioning.Input("empty_conditioning"),
@@ -127,7 +127,7 @@ class PerpNegGuider(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="PerpNegGuider",
-            category="_for_testing",
+            category="Legacy/_for_testing",
             inputs=[
                 io.Model.Input("model"),
                 io.Conditioning.Input("positive"),

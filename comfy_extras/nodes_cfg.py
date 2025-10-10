@@ -26,7 +26,7 @@ class CFGZeroStar(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             node_id="CFGZeroStar",
-            category="advanced/guidance",
+            category="Legacy/advanced/guidance",
             inputs=[
                 io.Model.Input("model"),
             ],
@@ -53,7 +53,7 @@ class CFGNorm(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             node_id="CFGNorm",
-            category="advanced/guidance",
+            category="Legacy/advanced/guidance",
             inputs=[
                 io.Model.Input("model"),
                 io.Float.Input("strength", default=1.0, min=0.0, max=100.0, step=0.01),

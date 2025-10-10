@@ -7,7 +7,7 @@ class CLIPTextEncodePixArtAlpha(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="CLIPTextEncodePixArtAlpha",
-            category="advanced/conditioning",
+            category="Legacy/advanced/conditioning",
             description="Encodes text and sets the resolution conditioning for PixArt Alpha. Does not apply to PixArt Sigma.",
             inputs=[
                 io.Int.Input("width", default=1024, min=0, max=nodes.MAX_RESOLUTION),

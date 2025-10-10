@@ -17,7 +17,7 @@ class WanImageToVideo(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="WanImageToVideo",
-            category="conditioning/video_models",
+            category="Legacy/conditioning/video_models",
             inputs=[
                 io.Conditioning.Input("positive"),
                 io.Conditioning.Input("negative"),
@@ -65,7 +65,7 @@ class WanFunControlToVideo(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="WanFunControlToVideo",
-            category="conditioning/video_models",
+            category="Legacy/conditioning/video_models",
             inputs=[
                 io.Conditioning.Input("positive"),
                 io.Conditioning.Input("negative"),
@@ -118,7 +118,7 @@ class Wan22FunControlToVideo(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="Wan22FunControlToVideo",
-            category="conditioning/video_models",
+            category="Legacy/conditioning/video_models",
             inputs=[
                 io.Conditioning.Input("positive"),
                 io.Conditioning.Input("negative"),
@@ -183,7 +183,7 @@ class WanFirstLastFrameToVideo(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="WanFirstLastFrameToVideo",
-            category="conditioning/video_models",
+            category="Legacy/conditioning/video_models",
             inputs=[
                 io.Conditioning.Input("positive"),
                 io.Conditioning.Input("negative"),
@@ -255,7 +255,7 @@ class WanFunInpaintToVideo(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="WanFunInpaintToVideo",
-            category="conditioning/video_models",
+            category="Legacy/conditioning/video_models",
             inputs=[
                 io.Conditioning.Input("positive"),
                 io.Conditioning.Input("negative"),
@@ -286,7 +286,7 @@ class WanVaceToVideo(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="WanVaceToVideo",
-            category="conditioning/video_models",
+            category="Legacy/conditioning/video_models",
             inputs=[
                 io.Conditioning.Input("positive"),
                 io.Conditioning.Input("negative"),
@@ -373,7 +373,7 @@ class TrimVideoLatent(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="TrimVideoLatent",
-            category="latent/video",
+            category="Legacy/latent/video",
             inputs=[
                 io.Latent.Input("samples"),
                 io.Int.Input("trim_amount", default=0, min=0, max=99999),
@@ -396,7 +396,7 @@ class WanCameraImageToVideo(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="WanCameraImageToVideo",
-            category="conditioning/video_models",
+            category="Legacy/conditioning/video_models",
             inputs=[
                 io.Conditioning.Input("positive"),
                 io.Conditioning.Input("negative"),
@@ -450,7 +450,7 @@ class WanPhantomSubjectToVideo(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="WanPhantomSubjectToVideo",
-            category="conditioning/video_models",
+            category="Legacy/conditioning/video_models",
             inputs=[
                 io.Conditioning.Input("positive"),
                 io.Conditioning.Input("negative"),
@@ -704,7 +704,7 @@ class WanTrackToVideo(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="WanTrackToVideo",
-            category="conditioning/video_models",
+            category="Legacy/conditioning/video_models",
             inputs=[
                 io.Conditioning.Input("positive"),
                 io.Conditioning.Input("negative"),
@@ -948,7 +948,7 @@ class WanSoundImageToVideo(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="WanSoundImageToVideo",
-            category="conditioning/video_models",
+            category="Legacy/conditioning/video_models",
             inputs=[
                 io.Conditioning.Input("positive"),
                 io.Conditioning.Input("negative"),
@@ -981,7 +981,7 @@ class WanSoundImageToVideoExtend(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="WanSoundImageToVideoExtend",
-            category="conditioning/video_models",
+            category="Legacy/conditioning/video_models",
             inputs=[
                 io.Conditioning.Input("positive"),
                 io.Conditioning.Input("negative"),
@@ -1043,7 +1043,7 @@ class WanHuMoImageToVideo(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="WanHuMoImageToVideo",
-            category="conditioning/video_models",
+            category="Legacy/conditioning/video_models",
             inputs=[
                 io.Conditioning.Input("positive"),
                 io.Conditioning.Input("negative"),
@@ -1109,7 +1109,7 @@ class WanAnimateToVideo(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="WanAnimateToVideo",
-            category="conditioning/video_models",
+            category="Legacy/conditioning/video_models",
             inputs=[
                 io.Conditioning.Input("positive"),
                 io.Conditioning.Input("negative"),
@@ -1249,7 +1249,7 @@ class Wan22ImageToVideoLatent(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="Wan22ImageToVideoLatent",
-            category="conditioning/inpaint",
+            category="Legacy/conditioning/inpaint",
             inputs=[
                 io.Vae.Input("vae"),
                 io.Int.Input("width", default=1280, min=32, max=nodes.MAX_RESOLUTION, step=32),

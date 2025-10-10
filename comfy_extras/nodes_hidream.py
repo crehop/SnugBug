@@ -11,7 +11,7 @@ class QuadrupleCLIPLoader(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="QuadrupleCLIPLoader",
-            category="advanced/loaders",
+            category="Legacy/advanced/loaders",
             description="[Recipes]\n\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
             inputs=[
                 io.Combo.Input("clip_name1", options=folder_paths.get_filename_list("text_encoders")),
@@ -38,7 +38,7 @@ class CLIPTextEncodeHiDream(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="CLIPTextEncodeHiDream",
-            category="advanced/conditioning",
+            category="Legacy/advanced/conditioning",
             inputs=[
                 io.Clip.Input("clip"),
                 io.String.Input("clip_l", multiline=True, dynamic_prompts=True),

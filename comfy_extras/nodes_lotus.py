@@ -10,7 +10,7 @@ class LotusConditioning(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="LotusConditioning",
-            category="conditioning/lotus",
+            category="Legacy/conditioning/lotus",
             inputs=[],
             outputs=[io.Conditioning.Output(display_name="conditioning")],
         )

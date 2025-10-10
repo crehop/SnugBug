@@ -9,7 +9,7 @@ class RenormCFG(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="RenormCFG",
-            category="advanced/model",
+            category="Legacy/advanced/model",
             inputs=[
                 io.Model.Input("model"),
                 io.Float.Input("cfg_trunc", default=100, min=0.0, max=100.0, step=0.01),
@@ -80,7 +80,7 @@ class CLIPTextEncodeLumina2(io.ComfyNode):
         return io.Schema(
             node_id="CLIPTextEncodeLumina2",
             display_name="CLIP Text Encode for Lumina2",
-            category="conditioning",
+            category="Legacy/conditioning",
             description="Encodes a system prompt and a user prompt using a CLIP model into an embedding "
                         "that can be used to guide the diffusion model towards generating specific images.",
             inputs=[

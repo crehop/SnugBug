@@ -25,7 +25,7 @@ class UNetSelfAttentionMultiply(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             node_id="UNetSelfAttentionMultiply",
-            category="_for_testing/attention_experiments",
+            category="Legacy/_for_testing/attention_experiments",
             inputs=[
                 io.Model.Input("model"),
                 io.Float.Input("q", default=1.0, min=0.0, max=10.0, step=0.01),
@@ -48,7 +48,7 @@ class UNetCrossAttentionMultiply(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             node_id="UNetCrossAttentionMultiply",
-            category="_for_testing/attention_experiments",
+            category="Legacy/_for_testing/attention_experiments",
             inputs=[
                 io.Model.Input("model"),
                 io.Float.Input("q", default=1.0, min=0.0, max=10.0, step=0.01),
@@ -71,7 +71,7 @@ class CLIPAttentionMultiply(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             node_id="CLIPAttentionMultiply",
-            category="_for_testing/attention_experiments",
+            category="Legacy/_for_testing/attention_experiments",
             inputs=[
                 io.Clip.Input("clip"),
                 io.Float.Input("q", default=1.0, min=0.0, max=10.0, step=0.01),
@@ -105,7 +105,7 @@ class UNetTemporalAttentionMultiply(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             node_id="UNetTemporalAttentionMultiply",
-            category="_for_testing/attention_experiments",
+            category="Legacy/_for_testing/attention_experiments",
             inputs=[
                 io.Model.Input("model"),
                 io.Float.Input("self_structural", default=1.0, min=0.0, max=10.0, step=0.01),

@@ -123,7 +123,7 @@ class TripoTextToModelNode:
     RETURN_TYPES = ("STRING", "MODEL_TASK_ID",)
     RETURN_NAMES = ("model_file", "model task_id")
     FUNCTION = "generate_mesh"
-    CATEGORY = "Legacy/api node/3d/Tripo"
+    CATEGORY = "api node/3d/Tripo"
     API_NODE = True
     OUTPUT_NODE = True
 
@@ -193,7 +193,7 @@ class TripoImageToModelNode:
     RETURN_TYPES = ("STRING", "MODEL_TASK_ID",)
     RETURN_NAMES = ("model_file", "model task_id")
     FUNCTION = "generate_mesh"
-    CATEGORY = "Legacy/api node/3d/Tripo"
+    CATEGORY = "api node/3d/Tripo"
     API_NODE = True
     OUTPUT_NODE = True
 
@@ -266,7 +266,7 @@ class TripoMultiviewToModelNode:
     RETURN_TYPES = ("STRING", "MODEL_TASK_ID",)
     RETURN_NAMES = ("model_file", "model task_id")
     FUNCTION = "generate_mesh"
-    CATEGORY = "Legacy/api node/3d/Tripo"
+    CATEGORY = "api node/3d/Tripo"
     API_NODE = True
     OUTPUT_NODE = True
 
@@ -339,7 +339,7 @@ class TripoTextureNode:
     RETURN_TYPES = ("STRING", "MODEL_TASK_ID",)
     RETURN_NAMES = ("model_file", "model task_id")
     FUNCTION = "generate_mesh"
-    CATEGORY = "Legacy/api node/3d/Tripo"
+    CATEGORY = "api node/3d/Tripo"
     API_NODE = True
     OUTPUT_NODE = True
     AVERAGE_DURATION = 80
@@ -386,7 +386,7 @@ class TripoRefineNode:
     RETURN_TYPES = ("STRING", "MODEL_TASK_ID",)
     RETURN_NAMES = ("model_file", "model task_id")
     FUNCTION = "generate_mesh"
-    CATEGORY = "Legacy/api node/3d/Tripo"
+    CATEGORY = "api node/3d/Tripo"
     API_NODE = True
     OUTPUT_NODE = True
     AVERAGE_DURATION = 240
@@ -424,7 +424,7 @@ class TripoRigNode:
     RETURN_TYPES = ("STRING", "RIG_TASK_ID")
     RETURN_NAMES = ("model_file", "rig task_id")
     FUNCTION = "generate_mesh"
-    CATEGORY = "Legacy/api node/3d/Tripo"
+    CATEGORY = "api node/3d/Tripo"
     API_NODE = True
     OUTPUT_NODE = True
     AVERAGE_DURATION = 180
@@ -475,7 +475,7 @@ class TripoRetargetNode:
     RETURN_TYPES = ("STRING", "RETARGET_TASK_ID")
     RETURN_NAMES = ("model_file", "retarget task_id")
     FUNCTION = "generate_mesh"
-    CATEGORY = "Legacy/api node/3d/Tripo"
+    CATEGORY = "api node/3d/Tripo"
     API_NODE = True
     OUTPUT_NODE = True
     AVERAGE_DURATION = 30
@@ -530,7 +530,7 @@ class TripoConversionNode:
 
     RETURN_TYPES = ()
     FUNCTION = "generate_mesh"
-    CATEGORY = "Legacy/api node/3d/Tripo"
+    CATEGORY = "api node/3d/Tripo"
     API_NODE = True
     OUTPUT_NODE = True
     AVERAGE_DURATION = 30

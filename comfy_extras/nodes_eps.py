@@ -16,7 +16,7 @@ class EpsilonScaling(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="Epsilon Scaling",
-            category="model_patches/unet",
+            category="Legacy/model_patches/unet",
             inputs=[
                 io.Model.Input("model"),
                 io.Float.Input(

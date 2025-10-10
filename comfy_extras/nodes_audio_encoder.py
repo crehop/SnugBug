@@ -10,7 +10,7 @@ class AudioEncoderLoader(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             node_id="AudioEncoderLoader",
-            category="loaders",
+            category="Legacy/loaders",
             inputs=[
                 io.Combo.Input(
                     "audio_encoder_name",
@@ -35,7 +35,7 @@ class AudioEncoderEncode(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             node_id="AudioEncoderEncode",
-            category="conditioning",
+            category="Legacy/conditioning",
             inputs=[
                 io.AudioEncoder.Input("audio_encoder"),
                 io.Audio.Input("audio"),

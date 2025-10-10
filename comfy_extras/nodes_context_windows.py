@@ -10,7 +10,7 @@ class ContextWindowsManualNode(io.ComfyNode):
         return io.Schema(
             node_id="ContextWindowsManual",
             display_name="Context Windows (Manual)",
-            category="context",
+            category="Legacy/context",
             description="Manually set context windows.",
             inputs=[
                 io.Model.Input("model", tooltip="The model to apply context windows to during sampling."),

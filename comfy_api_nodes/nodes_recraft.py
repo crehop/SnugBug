@@ -188,7 +188,7 @@ class RecraftColorRGBNode:
     DESCRIPTION = cleandoc(__doc__ or "")  # Handle potential None value
     RETURN_NAMES = ("recraft_color",)
     FUNCTION = "create_color"
-    CATEGORY = "Legacy/api node/image/Recraft"
+    CATEGORY = "api node/image/Recraft"
 
     @classmethod
     def INPUT_TYPES(s):
@@ -233,7 +233,7 @@ class RecraftControlsNode:
     RETURN_NAMES = ("recraft_controls",)
     DESCRIPTION = cleandoc(__doc__ or "")  # Handle potential None value
     FUNCTION = "create_controls"
-    CATEGORY = "Legacy/api node/image/Recraft"
+    CATEGORY = "api node/image/Recraft"
 
     @classmethod
     def INPUT_TYPES(s):
@@ -259,7 +259,7 @@ class RecraftStyleV3RealisticImageNode:
     RETURN_NAMES = ("recraft_style",)
     DESCRIPTION = cleandoc(__doc__ or "")  # Handle potential None value
     FUNCTION = "create_style"
-    CATEGORY = "Legacy/api node/image/Recraft"
+    CATEGORY = "api node/image/Recraft"
 
     RECRAFT_STYLE = RecraftStyleV3.realistic_image
 
@@ -318,7 +318,7 @@ class RecraftStyleInfiniteStyleLibrary:
     RETURN_NAMES = ("recraft_style",)
     DESCRIPTION = cleandoc(__doc__ or "")  # Handle potential None value
     FUNCTION = "create_style"
-    CATEGORY = "Legacy/api node/image/Recraft"
+    CATEGORY = "api node/image/Recraft"
 
     @classmethod
     def INPUT_TYPES(s):
@@ -346,7 +346,7 @@ class RecraftTextToImageNode:
     DESCRIPTION = cleandoc(__doc__ or "")  # Handle potential None value
     FUNCTION = "api_call"
     API_NODE = True
-    CATEGORY = "Legacy/api node/image/Recraft"
+    CATEGORY = "api node/image/Recraft"
 
     @classmethod
     def INPUT_TYPES(s):
@@ -486,7 +486,7 @@ class RecraftImageToImageNode:
     DESCRIPTION = cleandoc(__doc__ or "")  # Handle potential None value
     FUNCTION = "api_call"
     API_NODE = True
-    CATEGORY = "Legacy/api node/image/Recraft"
+    CATEGORY = "api node/image/Recraft"
 
     @classmethod
     def INPUT_TYPES(s):
@@ -617,7 +617,7 @@ class RecraftImageInpaintingNode:
     DESCRIPTION = cleandoc(__doc__ or "")  # Handle potential None value
     FUNCTION = "api_call"
     API_NODE = True
-    CATEGORY = "Legacy/api node/image/Recraft"
+    CATEGORY = "api node/image/Recraft"
 
     @classmethod
     def INPUT_TYPES(s):
@@ -730,7 +730,7 @@ class RecraftTextToVectorNode:
     DESCRIPTION = cleandoc(__doc__ or "") if 'cleandoc' in globals() else __doc__ # Keep cleandoc if other nodes use it
     FUNCTION = "api_call"
     API_NODE = True
-    CATEGORY = "Legacy/api node/image/Recraft"
+    CATEGORY = "api node/image/Recraft"
 
     @classmethod
     def INPUT_TYPES(s):
@@ -861,7 +861,7 @@ class RecraftVectorizeImageNode:
     DESCRIPTION = cleandoc(__doc__ or "") if 'cleandoc' in globals() else __doc__ # Keep cleandoc if other nodes use it
     FUNCTION = "api_call"
     API_NODE = True
-    CATEGORY = "Legacy/api node/image/Recraft"
+    CATEGORY = "api node/image/Recraft"
 
     @classmethod
     def INPUT_TYPES(s):
@@ -906,7 +906,7 @@ class RecraftReplaceBackgroundNode:
     DESCRIPTION = cleandoc(__doc__ or "")  # Handle potential None value
     FUNCTION = "api_call"
     API_NODE = True
-    CATEGORY = "Legacy/api node/image/Recraft"
+    CATEGORY = "api node/image/Recraft"
 
     @classmethod
     def INPUT_TYPES(s):
@@ -1011,7 +1011,7 @@ class RecraftRemoveBackgroundNode:
     DESCRIPTION = cleandoc(__doc__ or "")  # Handle potential None value
     FUNCTION = "api_call"
     API_NODE = True
-    CATEGORY = "Legacy/api node/image/Recraft"
+    CATEGORY = "api node/image/Recraft"
 
     @classmethod
     def INPUT_TYPES(s):
@@ -1060,7 +1060,7 @@ class RecraftCrispUpscaleNode:
     DESCRIPTION = cleandoc(__doc__ or "")  # Handle potential None value
     FUNCTION = "api_call"
     API_NODE = True
-    CATEGORY = "Legacy/api node/image/Recraft"
+    CATEGORY = "api node/image/Recraft"
 
     RECRAFT_PATH = "/proxy/recraft/images/crispUpscale"
 
@@ -1109,7 +1109,7 @@ class RecraftCreativeUpscaleNode(RecraftCrispUpscaleNode):
     DESCRIPTION = cleandoc(__doc__ or "")  # Handle potential None value
     FUNCTION = "api_call"
     API_NODE = True
-    CATEGORY = "Legacy/api node/image/Recraft"
+    CATEGORY = "api node/image/Recraft"
 
     RECRAFT_PATH = "/proxy/recraft/images/creativeUpscale"
 

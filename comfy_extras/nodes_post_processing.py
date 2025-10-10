@@ -15,7 +15,7 @@ class Blend(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="ImageBlend",
-            category="image/postprocessing",
+            category="Legacy/image/postprocessing",
             inputs=[
                 io.Image.Input("image1"),
                 io.Image.Input("image2"),
@@ -72,7 +72,7 @@ class Blur(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="ImageBlur",
-            category="image/postprocessing",
+            category="Legacy/image/postprocessing",
             inputs=[
                 io.Image.Input("image"),
                 io.Int.Input("blur_radius", default=1, min=1, max=31, step=1),
@@ -107,7 +107,7 @@ class Quantize(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="ImageQuantize",
-            category="image/postprocessing",
+            category="Legacy/image/postprocessing",
             inputs=[
                 io.Image.Input("image"),
                 io.Int.Input("colors", default=256, min=1, max=256, step=1),
@@ -172,7 +172,7 @@ class Sharpen(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="ImageSharpen",
-            category="image/postprocessing",
+            category="Legacy/image/postprocessing",
             inputs=[
                 io.Image.Input("image"),
                 io.Int.Input("sharpen_radius", default=1, min=1, max=31, step=1),
@@ -216,7 +216,7 @@ class ImageScaleToTotalPixels(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="ImageScaleToTotalPixels",
-            category="image/upscaling",
+            category="Legacy/image/upscaling",
             inputs=[
                 io.Image.Input("image"),
                 io.Combo.Input("upscale_method", options=cls.upscale_methods),

@@ -10,7 +10,7 @@ class LatentRebatch(io.ComfyNode):
         return io.Schema(
             node_id="RebatchLatents",
             display_name="Rebatch Latents",
-            category="latent/batch",
+            category="Legacy/latent/batch",
             is_input_list=True,
             inputs=[
                 io.Latent.Input("latents"),
@@ -113,7 +113,7 @@ class ImageRebatch(io.ComfyNode):
         return io.Schema(
             node_id="RebatchImages",
             display_name="Rebatch Images",
-            category="image/batch",
+            category="Legacy/image/batch",
             is_input_list=True,
             inputs=[
                 io.Image.Input("images"),

@@ -10,7 +10,7 @@ class String(io.ComfyNode):
         return io.Schema(
             node_id="PrimitiveString",
             display_name="String",
-            category="utils/primitive",
+            category="Legacy/utils/primitive",
             inputs=[
                 io.String.Input("value"),
             ],
@@ -28,7 +28,7 @@ class StringMultiline(io.ComfyNode):
         return io.Schema(
             node_id="PrimitiveStringMultiline",
             display_name="String (Multiline)",
-            category="utils/primitive",
+            category="Legacy/utils/primitive",
             inputs=[
                 io.String.Input("value", multiline=True),
             ],
@@ -46,7 +46,7 @@ class Int(io.ComfyNode):
         return io.Schema(
             node_id="PrimitiveInt",
             display_name="Int",
-            category="utils/primitive",
+            category="Legacy/utils/primitive",
             inputs=[
                 io.Int.Input("value", min=-sys.maxsize, max=sys.maxsize, control_after_generate=True),
             ],
@@ -64,7 +64,7 @@ class Float(io.ComfyNode):
         return io.Schema(
             node_id="PrimitiveFloat",
             display_name="Float",
-            category="utils/primitive",
+            category="Legacy/utils/primitive",
             inputs=[
                 io.Float.Input("value", min=-sys.maxsize, max=sys.maxsize),
             ],
@@ -82,7 +82,7 @@ class Boolean(io.ComfyNode):
         return io.Schema(
             node_id="PrimitiveBoolean",
             display_name="Boolean",
-            category="utils/primitive",
+            category="Legacy/utils/primitive",
             inputs=[
                 io.Boolean.Input("value"),
             ],

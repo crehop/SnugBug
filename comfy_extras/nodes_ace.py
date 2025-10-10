@@ -11,7 +11,7 @@ class TextEncodeAceStepAudio(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="TextEncodeAceStepAudio",
-            category="conditioning",
+            category="Legacy/conditioning",
             inputs=[
                 io.Clip.Input("clip"),
                 io.String.Input("tags", multiline=True, dynamic_prompts=True),
@@ -34,7 +34,7 @@ class EmptyAceStepLatentAudio(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="EmptyAceStepLatentAudio",
-            category="latent/audio",
+            category="Legacy/latent/audio",
             inputs=[
                 io.Float.Input("seconds", default=120.0, min=1.0, max=1000.0, step=0.1),
                 io.Int.Input(

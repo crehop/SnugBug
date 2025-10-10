@@ -12,7 +12,7 @@ class DifferentialDiffusion(io.ComfyNode):
         return io.Schema(
             node_id="DifferentialDiffusion",
             display_name="Differential Diffusion",
-            category="_for_testing",
+            category="Legacy/_for_testing",
             inputs=[
                 io.Model.Input("model"),
                 io.Float.Input(

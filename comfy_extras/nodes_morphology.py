@@ -13,7 +13,7 @@ class Morphology(io.ComfyNode):
         return io.Schema(
             node_id="Morphology",
             display_name="ImageMorphology",
-            category="image/postprocessing",
+            category="Legacy/image/postprocessing",
             inputs=[
                 io.Image.Input("image"),
                 io.Combo.Input(
@@ -57,7 +57,7 @@ class ImageRGBToYUV(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="ImageRGBToYUV",
-            category="image/batch",
+            category="Legacy/image/batch",
             inputs=[
                 io.Image.Input("image"),
             ],
@@ -78,7 +78,7 @@ class ImageYUVToRGB(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="ImageYUVToRGB",
-            category="image/batch",
+            category="Legacy/image/batch",
             inputs=[
                 io.Image.Input("Y"),
                 io.Image.Input("U"),

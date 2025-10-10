@@ -10,7 +10,7 @@ class Canny(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="Canny",
-            category="image/preprocessors",
+            category="Legacy/image/preprocessors",
             inputs=[
                 io.Image.Input("image"),
                 io.Float.Input("low_threshold", default=0.4, min=0.01, max=0.99, step=0.01),
