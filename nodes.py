@@ -338,6 +338,9 @@ async def init_builtin_api_nodes():
         "nodes_luma.py",
         "nodes_recraft.py",
         "nodes_firefly.py",
+        "nodes_firefly_inputs.py",
+        "firefly_v2",  # Firefly V2 refactored nodes
+        "nodes_test.py",
         "nodes_pixverse.py",
         "nodes_stability.py",
         "nodes_pika.py",
