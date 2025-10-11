@@ -266,7 +266,7 @@ class FireflyTextToImageNodeV2:
     """
 
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING", "STRING", "STRING")
-    RETURN_NAMES = ("image", "image_url_1", "image_url_2", "image_url_3", "image_url_4", "debug_log")
+    RETURN_NAMES = ("image", "image_url", "image_url_2", "image_url_3", "image_url_4", "debug_log")
     FUNCTION = "api_call"
     API_NODE = True
     CATEGORY = "api node/firefly v2"
@@ -710,13 +710,13 @@ class FireflyTextToImageNodeV2:
 
             output_image = torch.cat(images, dim=0)
 
-            # Split URLs into individual outputs (up to 4)
-            url_1 = presigned_urls[0] if len(presigned_urls) > 0 else ""
-            url_2 = presigned_urls[1] if len(presigned_urls) > 1 else ""
-            url_3 = presigned_urls[2] if len(presigned_urls) > 2 else ""
-            url_4 = presigned_urls[3] if len(presigned_urls) > 3 else ""
+            # Return all 4 URLs (pad with empty strings if fewer generated)
+            image_url = presigned_urls[0] if len(presigned_urls) > 0 else ""
+            image_url_2 = presigned_urls[1] if len(presigned_urls) > 1 else ""
+            image_url_3 = presigned_urls[2] if len(presigned_urls) > 2 else ""
+            image_url_4 = presigned_urls[3] if len(presigned_urls) > 3 else ""
 
-            return (output_image, url_1, url_2, url_3, url_4, console_log)
+            return (output_image, image_url, image_url_2, image_url_3, image_url_4, console_log)
 
         finally:
             await client.close()
@@ -807,8 +807,8 @@ class FireflyGenerativeFillNodeV2:
     - Dual input support for images and masks
     """
 
-    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING", "STRING", "STRING")
-    RETURN_NAMES = ("image", "image_url_1", "image_url_2", "image_url_3", "image_url_4", "debug_log")
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING")
+    RETURN_NAMES = ("image", "image_url", "debug_log")
     FUNCTION = "api_call"
     API_NODE = True
     CATEGORY = "api node/firefly v2"
@@ -1033,13 +1033,10 @@ class FireflyGenerativeFillNodeV2:
             images_tensor = torch.cat(images, dim=0)
             console_log = f"Generative Fill completed: {total} image(s) processed"
 
-            # Split URLs into individual outputs (up to 4)
-            url_1 = all_urls[0] if len(all_urls) > 0 else ""
-            url_2 = all_urls[1] if len(all_urls) > 1 else ""
-            url_3 = all_urls[2] if len(all_urls) > 2 else ""
-            url_4 = all_urls[3] if len(all_urls) > 3 else ""
+            # Return first URL (typically only 1 image is generated)
+            image_url = all_urls[0] if len(all_urls) > 0 else ""
 
-            return (images_tensor, url_1, url_2, url_3, url_4, console_log)
+            return (images_tensor, image_url, console_log)
 
         finally:
             await client.close()
@@ -1053,11 +1050,12 @@ class FireflyGenerativeExpandNodeV2:
     - Cleaner code structure
     - Better batch processing
     - Enhanced error handling
-    - Dual input support for images
+    - Dual input support for images and masks
+    - Placement controls for image positioning
     """
 
-    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING", "STRING", "STRING")
-    RETURN_NAMES = ("image", "image_url_1", "image_url_2", "image_url_3", "image_url_4", "debug_log")
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING")
+    RETURN_NAMES = ("image", "image_url", "debug_log")
     FUNCTION = "api_call"
     API_NODE = True
     CATEGORY = "api node/firefly v2"
@@ -1080,24 +1078,85 @@ class FireflyGenerativeExpandNodeV2:
                         "tooltip": "Image upload ID or presigned URL from another node.",
                     },
                 ),
+                "mask": (
+                    "MASK",
+                    {
+                        "tooltip": "Mask image to guide expansion (auto-uploads to Firefly storage). Cannot use with placement.",
+                    },
+                ),
+                "mask_reference": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "forceInput": True,
+                        "tooltip": "Mask upload ID or presigned URL from another node. Cannot use with placement.",
+                    },
+                ),
+                "prompt": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "multiline": True,
+                        "forceInput": True,
+                        "tooltip": "Optional prompt to guide the expansion.",
+                    },
+                ),
+                "alignment_horizontal": (
+                    ["center", "left", "right"],
+                    {
+                        "default": "center",
+                        "tooltip": "Horizontal alignment of source image in output. Cannot use with mask.",
+                    },
+                ),
+                "alignment_vertical": (
+                    ["center", "top", "bottom"],
+                    {
+                        "default": "center",
+                        "tooltip": "Vertical alignment of source image in output. Cannot use with mask.",
+                    },
+                ),
+                "inset_left": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "tooltip": "Left margin in pixels (0-3999). Leave empty for 0. Cannot use with mask.",
+                    },
+                ),
+                "inset_top": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "tooltip": "Top margin in pixels (0-3999). Leave empty for 0. Cannot use with mask.",
+                    },
+                ),
+                "inset_right": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "tooltip": "Right margin in pixels (0-3999). Leave empty for 0. Cannot use with mask.",
+                    },
+                ),
+                "inset_bottom": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "tooltip": "Bottom margin in pixels (0-3999). Leave empty for 0. Cannot use with mask.",
+                    },
+                ),
             },
             "required": {
                 "output_width": (
-                    "INT",
+                    "STRING",
                     {
-                        "default": 2048,
-                        "min": 1,
-                        "max": 3999,
-                        "tooltip": "Width of expanded image in pixels.",
+                        "default": "2048",
+                        "tooltip": "Width of expanded image in pixels (1-3999).",
                     },
                 ),
                 "output_height": (
-                    "INT",
+                    "STRING",
                     {
-                        "default": 2048,
-                        "min": 1,
-                        "max": 3999,
-                        "tooltip": "Height of expanded image in pixels.",
+                        "default": "2048",
+                        "tooltip": "Height of expanded image in pixels (1-3999).",
                     },
                 ),
                 "num_variations": (
@@ -1117,25 +1176,6 @@ class FireflyGenerativeExpandNodeV2:
                     },
                 ),
             },
-            "optional": {
-                "prompt": (
-                    "STRING",
-                    {
-                        "default": "",
-                        "multiline": True,
-                        "forceInput": True,
-                        "tooltip": "Optional prompt to guide the expansion.",
-                    },
-                ),
-                "negative_prompt": (
-                    "STRING",
-                    {
-                        "default": "",
-                        "forceInput": True,
-                        "tooltip": "Negative prompt to exclude unwanted elements.",
-                    },
-                ),
-            },
             "hidden": {
                 "unique_id": "UNIQUE_ID",
             },
@@ -1143,22 +1183,55 @@ class FireflyGenerativeExpandNodeV2:
 
     async def api_call(
         self,
-        output_width: int,
-        output_height: int,
+        output_width: str,
+        output_height: str,
         num_variations: int,
         seed: str = "",
         image: Optional[torch.Tensor] = None,
         image_reference: str = "",
+        mask: Optional[torch.Tensor] = None,
+        mask_reference: str = "",
         prompt: str = "",
-        negative_prompt: str = "",
+        alignment_horizontal: str = "center",
+        alignment_vertical: str = "center",
+        inset_left: str = "",
+        inset_top: str = "",
+        inset_right: str = "",
+        inset_bottom: str = "",
         unique_id: Optional[str] = None,
     ):
         """Expand image using Firefly API."""
+        # Parse width and height
+        try:
+            width_int = int(output_width.strip()) if output_width and output_width.strip() else 2048
+            height_int = int(output_height.strip()) if output_height and output_height.strip() else 2048
+        except ValueError:
+            raise ValueError(f"Invalid output dimensions. Width: '{output_width}', Height: '{output_height}'. Must be integers between 1-3999.")
+
+        # Parse inset values
+        try:
+            inset_left_int = int(inset_left.strip()) if inset_left and inset_left.strip() else 0
+            inset_top_int = int(inset_top.strip()) if inset_top and inset_top.strip() else 0
+            inset_right_int = int(inset_right.strip()) if inset_right and inset_right.strip() else 0
+            inset_bottom_int = int(inset_bottom.strip()) if inset_bottom and inset_bottom.strip() else 0
+        except ValueError:
+            raise ValueError(f"Invalid inset values. Must be integers between 0-3999.")
+
         # Validate inputs
         if image is None and not image_reference:
             raise ValueError("Must provide either 'image' or 'image_reference'")
         if image is not None and image_reference:
             raise ValueError("Cannot provide both 'image' and 'image_reference' - choose only one")
+
+        # Validate mask inputs
+        has_mask = (mask is not None) or bool(mask_reference)
+        has_placement = (alignment_horizontal != "center" or alignment_vertical != "center" or
+                        inset_left_int > 0 or inset_top_int > 0 or inset_right_int > 0 or inset_bottom_int > 0)
+
+        if has_mask and has_placement:
+            raise ValueError("Cannot use both mask and placement parameters - choose only one")
+        if mask is not None and mask_reference:
+            raise ValueError("Cannot provide both 'mask' and 'mask_reference' - choose only one")
 
         # Parse seeds
         seeds_list = None
@@ -1176,6 +1249,27 @@ class FireflyGenerativeExpandNodeV2:
             total = image.shape[0] if image is not None else 1
             pbar = ProgressBar(total)
 
+            # Build debug log for first iteration
+            console_log = self._build_debug_log(
+                width=width_int,
+                height=height_int,
+                num_variations=num_variations,
+                seed=seed,
+                prompt=prompt,
+                image=image,
+                image_reference=image_reference,
+                mask=mask,
+                mask_reference=mask_reference,
+                has_mask=has_mask,
+                has_placement=has_placement,
+                alignment_horizontal=alignment_horizontal,
+                alignment_vertical=alignment_vertical,
+                inset_left_int=inset_left_int,
+                inset_top_int=inset_top_int,
+                inset_right_int=inset_right_int,
+                inset_bottom_int=inset_bottom_int,
+            )
+
             for i in range(total):
                 # Determine image source
                 if image is not None:
@@ -1189,14 +1283,57 @@ class FireflyGenerativeExpandNodeV2:
                     else:
                         image_source = FireflyPublicBinaryInput(uploadId=image_reference)
 
+                # Determine mask source if provided
+                mask_input = None
+                if has_mask:
+                    if mask is not None:
+                        # Upload to Firefly storage and get upload ID
+                        mask_upload_id = await upload_image_to_firefly(image=mask[i:i+1] if mask.shape[0] > 1 else mask)
+                        mask_source = FireflyPublicBinaryInput(uploadId=mask_upload_id)
+                    else:
+                        # Use provided upload ID or presigned URL
+                        if mask_reference.lower().startswith("http"):
+                            mask_source = FireflyPublicBinaryInput(url=mask_reference)
+                        else:
+                            mask_source = FireflyPublicBinaryInput(uploadId=mask_reference)
+
+                    from comfy_api_nodes.apis.firefly_api import FireflyInputMask
+                    mask_input = FireflyInputMask(source=mask_source)
+
+                # Build placement if specified and no mask
+                placement = None
+                if has_placement and not has_mask:
+                    from comfy_api_nodes.apis.firefly_api import FireflyPlacement, FireflyPlacementAlignment, FireflyPlacementInset
+
+                    alignment = FireflyPlacementAlignment(
+                        horizontal=alignment_horizontal,
+                        vertical=alignment_vertical
+                    )
+
+                    # Only include inset if any value is non-zero
+                    inset = None
+                    if inset_left_int > 0 or inset_top_int > 0 or inset_right_int > 0 or inset_bottom_int > 0:
+                        inset = FireflyPlacementInset(
+                            left=inset_left_int if inset_left_int > 0 else None,
+                            top=inset_top_int if inset_top_int > 0 else None,
+                            right=inset_right_int if inset_right_int > 0 else None,
+                            bottom=inset_bottom_int if inset_bottom_int > 0 else None
+                        )
+
+                    placement = FireflyPlacement(
+                        alignment=alignment,
+                        inset=inset
+                    )
+
                 # Prepare request
                 request = ExpandImageRequest(
                     image=FireflyInputImage(
                         source=image_source
                     ),
-                    size=FireflySize(width=output_width, height=output_height),
+                    size=FireflySize(width=width_int, height=height_int),
                     prompt=prompt if prompt else None,
-                    negativePrompt=negative_prompt if negative_prompt else None,
+                    mask=mask_input,
+                    placement=placement,
                     numVariations=num_variations,
                     seeds=seeds_list,
                 )
@@ -1216,6 +1353,18 @@ class FireflyGenerativeExpandNodeV2:
                 )
 
                 submit_response = await submit_op.execute(client=client)
+
+                # Log response for first iteration only
+                if i == 0:
+                    console_log += f"\nResponse: 202 Accepted\n"
+                    console_log += f"  jobId: {submit_response.jobId}\n"
+
+                # Log polling section for first iteration only
+                if i == 0:
+                    console_log += f"\n{'='*55}\n"
+                    console_log += f"GET /v3/status/{submit_response.jobId.split(':')[-1][:8]}...\n"
+                    console_log += f"{'-'*55}\n"
+                    console_log += f"Polling for job completion...\n"
 
                 # Poll for completion
                 poll_endpoint = ApiEndpoint(
@@ -1239,14 +1388,35 @@ class FireflyGenerativeExpandNodeV2:
 
                 result = await poll_op.execute(client=client)
 
-                # Download outputs
+                # Log result for first iteration only
+                if i == 0:
+                    console_log += f"\nResponse: 200 OK\n"
+                    console_log += f"  status: {result.status}\n"
+                    console_log += f"  jobId: {result.jobId}\n"
+                    console_log += f"  outputs: {len(result.outputs) if result.outputs else 0} image(s)\n"
+
+                # Validate outputs
                 if not result.outputs:
+                    if i == 0:
+                        console_log += f"\n{'='*55}\n"
+                        console_log += f"ERROR: No outputs in response\n"
+                        console_log += f"  status: {result.status}\n"
                     raise Exception("No outputs returned from Firefly API")
+
+                # Log download start for first iteration only
+                if i == 0:
+                    console_log += f"\n{'='*55}\n"
+                    console_log += f"Downloading {len(result.outputs)} output(s)...\n"
 
                 output_bytesio, presigned_urls = await download_firefly_outputs(
                     result.outputs,
                     unique_id=unique_id,
                 )
+
+                # Log download completion for first iteration only
+                if i == 0:
+                    console_log += f"[OK] Downloaded {len(output_bytesio)} image(s)\n"
+                    console_log += f"{'='*55}\n"
 
                 all_urls.extend(presigned_urls)
 
@@ -1262,18 +1432,89 @@ class FireflyGenerativeExpandNodeV2:
                 pbar.update(1)
 
             images_tensor = torch.cat(images, dim=0)
-            console_log = f"Generative Expand completed: {total} image(s) processed"
 
-            # Split URLs into individual outputs (up to 4)
-            url_1 = all_urls[0] if len(all_urls) > 0 else ""
-            url_2 = all_urls[1] if len(all_urls) > 1 else ""
-            url_3 = all_urls[2] if len(all_urls) > 2 else ""
-            url_4 = all_urls[3] if len(all_urls) > 3 else ""
+            # Add presigned URLs to console log
+            console_log += f"\nPresigned URLs (valid for 1 hour):\n"
+            for idx, url in enumerate(all_urls, 1):
+                console_log += f"  [{idx}] {url}\n"
+            console_log += f"{'='*55}\n"
 
-            return (images_tensor, url_1, url_2, url_3, url_4, console_log)
+            # Return first URL (typically only 1 image is generated)
+            image_url = all_urls[0] if len(all_urls) > 0 else ""
+
+            return (images_tensor, image_url, console_log)
 
         finally:
             await client.close()
+
+    def _build_debug_log(
+        self,
+        width: int,
+        height: int,
+        num_variations: int,
+        seed: str,
+        prompt: str,
+        image: Optional[torch.Tensor],
+        image_reference: str,
+        mask: Optional[torch.Tensor],
+        mask_reference: str,
+        has_mask: bool,
+        has_placement: bool,
+        alignment_horizontal: str,
+        alignment_vertical: str,
+        inset_left_int: int,
+        inset_top_int: int,
+        inset_right_int: int,
+        inset_bottom_int: int,
+    ) -> str:
+        """Build formatted debug log for console output."""
+        log = "=" * 55 + "\n"
+        log += "POST /v3/images/expand-async\n"
+        log += "-" * 55 + "\n"
+        log += f"Headers:\n"
+        log += f"  x-model-version: image3\n"  # Expand uses default image3
+        log += f"\nRequest Body:\n"
+
+        # Image source
+        if image is not None:
+            log += f"  image: [UPLOADED IMAGE]\n"
+        else:
+            log += f"  image: {image_reference}\n"
+
+        log += f"  size: {width}x{height}\n"
+        log += f"  numVariations: {num_variations}\n"
+
+        if seed and seed.strip():
+            log += f"  seeds: [{seed}]\n"
+
+        if prompt and prompt.strip():
+            log += f"  prompt: {prompt[:50]}...\n" if len(prompt) > 50 else f"  prompt: {prompt}\n"
+
+        # Mask info
+        if has_mask:
+            if mask is not None:
+                log += f"  mask: [UPLOADED MASK]\n"
+            else:
+                log += f"  mask: {mask_reference}\n"
+
+        # Placement info
+        if has_placement:
+            log += f"  placement:\n"
+            log += f"    alignment:\n"
+            log += f"      horizontal: {alignment_horizontal}\n"
+            log += f"      vertical: {alignment_vertical}\n"
+            if inset_left_int > 0 or inset_top_int > 0 or inset_right_int > 0 or inset_bottom_int > 0:
+                log += f"    inset:\n"
+                if inset_left_int > 0:
+                    log += f"      left: {inset_left_int}\n"
+                if inset_top_int > 0:
+                    log += f"      top: {inset_top_int}\n"
+                if inset_right_int > 0:
+                    log += f"      right: {inset_right_int}\n"
+                if inset_bottom_int > 0:
+                    log += f"      bottom: {inset_bottom_int}\n"
+
+        return log
 
 
 class FireflyGenerateSimilarNodeV2:
@@ -1287,8 +1528,8 @@ class FireflyGenerateSimilarNodeV2:
     - Dual input support for images
     """
 
-    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING", "STRING", "STRING")
-    RETURN_NAMES = ("image", "image_url_1", "image_url_2", "image_url_3", "image_url_4", "debug_log")
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING")
+    RETURN_NAMES = ("image", "image_url", "debug_log")
     FUNCTION = "api_call"
     API_NODE = True
     CATEGORY = "api node/firefly v2"
@@ -1474,13 +1715,10 @@ class FireflyGenerateSimilarNodeV2:
             images_tensor = torch.cat(images, dim=0)
             console_log = f"Generate Similar completed: {total} image(s) processed"
 
-            # Split URLs into individual outputs (up to 4)
-            url_1 = all_urls[0] if len(all_urls) > 0 else ""
-            url_2 = all_urls[1] if len(all_urls) > 1 else ""
-            url_3 = all_urls[2] if len(all_urls) > 2 else ""
-            url_4 = all_urls[3] if len(all_urls) > 3 else ""
+            # Return first URL (typically only 1 image is generated)
+            image_url = all_urls[0] if len(all_urls) > 0 else ""
 
-            return (images_tensor, url_1, url_2, url_3, url_4, console_log)
+            return (images_tensor, image_url, console_log)
 
         finally:
             await client.close()
@@ -1497,8 +1735,8 @@ class FireflyGenerateObjectCompositeNodeV2:
     - Dual input support for images and masks
     """
 
-    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING", "STRING", "STRING")
-    RETURN_NAMES = ("image", "image_url_1", "image_url_2", "image_url_3", "image_url_4", "debug_log")
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING")
+    RETURN_NAMES = ("image", "image_url", "debug_log")
     FUNCTION = "api_call"
     API_NODE = True
     CATEGORY = "api node/firefly v2"
@@ -1724,13 +1962,10 @@ class FireflyGenerateObjectCompositeNodeV2:
             images_tensor = torch.cat(images, dim=0)
             console_log = f"Object Composite completed: {total} image(s) processed"
 
-            # Split URLs into individual outputs (up to 4)
-            url_1 = all_urls[0] if len(all_urls) > 0 else ""
-            url_2 = all_urls[1] if len(all_urls) > 1 else ""
-            url_3 = all_urls[2] if len(all_urls) > 2 else ""
-            url_4 = all_urls[3] if len(all_urls) > 3 else ""
+            # Return first URL (typically only 1 image is generated)
+            image_url = all_urls[0] if len(all_urls) > 0 else ""
 
-            return (images_tensor, url_1, url_2, url_3, url_4, console_log)
+            return (images_tensor, image_url, console_log)
 
         finally:
             await client.close()
