@@ -53,6 +53,7 @@ from comfy_api_nodes.apis.client import (
     EmptyRequest,
 )
 from comfy_api_nodes.apis.adobe_auth import get_adobe_auth_manager
+from comfy_api_nodes.apis.firefly_storage import upload_image_to_firefly as upload_image_for_firefly_api
 from comfy_api_nodes.apinode_utils import (
     bytesio_to_image_tensor,
     download_url_to_bytesio,
@@ -276,7 +277,7 @@ class FireflyTextToImageNode:
     """
 
     RETURN_TYPES = (IO.IMAGE, IO.STRING, IO.STRING, IO.STRING, IO.STRING, IO.STRING)
-    RETURN_NAMES = ("image", "url_1", "url_2", "url_3", "url_4", "debug_log")
+    RETURN_NAMES = ("image", "image_url_1", "image_url_2", "image_url_3", "image_url_4", "debug_log")
     DESCRIPTION = cleandoc(__doc__ or "")
     FUNCTION = "api_call"
     API_NODE = True
@@ -286,7 +287,7 @@ class FireflyTextToImageNode:
     def INPUT_TYPES(s):
         return {
             "optional": {
-                # Text inputs
+                # Text inputs (at top)
                 "prompt": (
                     IO.STRING,
                     {
@@ -299,6 +300,7 @@ class FireflyTextToImageNode:
                     IO.STRING,
                     {
                         "multiline": True,
+                        "default": "",
                         "tooltip": "Negative prompt to exclude unwanted elements.",
                     },
                 ),
@@ -306,46 +308,26 @@ class FireflyTextToImageNode:
                     IO.STRING,
                     {
                         "multiline": True,
+                        "default": "",
                         "tooltip": "Text to append to the main prompt.",
                     },
                 ),
-                "custom_model_id": (
+
+                # Seed (comma-separated for multiple values)
+                "seed": (
                     IO.STRING,
                     {
-                        "tooltip": "Custom model identifier (for *_custom model versions).",
-                    },
-                ),
-                "prompt_biasing_locale": (
-                    IO.STRING,
-                    {
-                        "tooltip": "Language/locale code (e.g., 'en-US', 'ja-JP').",
-                    },
-                ),
-                "style_preset": (
-                    FIREFLY_STYLE_PRESETS,
-                    {
-                        "default": "none",
-                        "tooltip": "Style preset to apply to generation.",
-                    },
-                ),
-                "style_upload_id": (
-                    IO.STRING,
-                    {
-                        "tooltip": "Style reference image upload ID or presigned URL from Firefly storage.",
-                    },
-                ),
-                "structure_upload_id": (
-                    IO.STRING,
-                    {
-                        "tooltip": "Structure reference image upload ID or presigned URL from Firefly storage.",
+                        "default": "",
+                        "tooltip": "Seed(s) for reproducibility. Can be single (e.g. '123') or comma-separated (e.g. '1,2,3,4') for multiple variations.",
                     },
                 ),
 
-                # Enum/Dropdown inputs
-                "content_class": (
-                    [c.value for c in FireflyContentClass],
+                # Primary controls
+                "model_version": (
+                    ["image3", "image3_custom", "image4_standard", "image4_ultra", "image4_custom"],
                     {
-                        "tooltip": "Content class: 'photo' for photorealistic, 'art' for artistic style.",
+                        "default": "image4_standard",
+                        "tooltip": "Firefly model version.",
                     },
                 ),
                 "size": (
@@ -355,60 +337,105 @@ class FireflyTextToImageNode:
                         "tooltip": "Image size and aspect ratio.",
                     },
                 ),
-                "model_version": (
-                    ["image3", "image3_custom", "image4_standard", "image4_ultra", "image4_custom"],
-                    {
-                        "default": "image4_standard",
-                        "tooltip": "Firefly model version.",
-                    },
-                ),
-                "upsampler_type": (
-                    ["default", "low_creativity"],
-                    {
-                        "tooltip": "Upsampler type (only for image4_custom model).",
-                    },
-                ),
-
-                # Integer inputs
                 "num_variations": (
                     IO.INT,
                     {
                         "min": 1,
                         "max": 4,
+                        "default": 1,
                         "tooltip": "Number of image variations to generate.",
                     },
                 ),
-                "seed": (
-                    IO.INT,
+                "content_class": (
+                    [c.value for c in FireflyContentClass],
                     {
-                        "min": 1,
-                        "max": 100000,
-                        "control_after_generate": True,
-                        "tooltip": "Seed for reproducibility (1-100,000).",
+                        "default": "photo",
+                        "tooltip": "Content class: 'photo' for photorealistic, 'art' for artistic style.",
+                    },
+                ),
+                "style_preset": (
+                    FIREFLY_STYLE_PRESETS,
+                    {
+                        "default": "none",
+                        "tooltip": "Style preset to apply to generation.",
+                    },
+                ),
+                "upsampler_type": (
+                    ["default", "low_creativity"],
+                    {
+                        "default": "default",
+                        "tooltip": "Upsampler type (only for image4_custom model).",
                     },
                 ),
                 "visual_intensity": (
-                    IO.INT,
+                    IO.STRING,
                     {
-                        "min": 2,
-                        "max": 10,
-                        "tooltip": "Visual intensity of the generation (2-10).",
+                        "default": "",
+                        "tooltip": "Visual intensity of the generation (2-10). Leave empty for default.",
+                    },
+                ),
+
+                # Reference inputs
+                "structure_reference": (
+                    IO.STRING,
+                    {
+                        "default": "",
+                        "forceInput": True,
+                        "tooltip": "Structure reference image upload ID or presigned URL from another node.",
+                    },
+                ),
+                "style_reference": (
+                    IO.STRING,
+                    {
+                        "default": "",
+                        "forceInput": True,
+                        "tooltip": "Style reference image upload ID or presigned URL from another node.",
+                    },
+                ),
+
+                # Image uploads
+                "structure_image": (
+                    IO.IMAGE,
+                    {
+                        "tooltip": "Structure reference image (auto-uploads to Firefly storage).",
+                    },
+                ),
+                "style_image": (
+                    IO.IMAGE,
+                    {
+                        "tooltip": "Style reference image (auto-uploads to Firefly storage).",
+                    },
+                ),
+
+                # Strength controls
+                "structure_strength": (
+                    IO.STRING,
+                    {
+                        "default": "",
+                        "tooltip": "Structure reference strength (0-100). Leave empty for default.",
                     },
                 ),
                 "style_strength": (
-                    IO.INT,
+                    IO.STRING,
                     {
-                        "min": 0,
-                        "max": 100,
-                        "tooltip": "Style reference strength (0-100).",
+                        "default": "",
+                        "tooltip": "Style reference strength (0-100). Leave empty for default.",
                     },
                 ),
-                "structure_strength": (
-                    IO.INT,
+
+                # Advanced options
+                "custom_model_id": (
+                    IO.STRING,
                     {
-                        "min": 0,
-                        "max": 100,
-                        "tooltip": "Structure reference strength (0-100).",
+                        "default": "",
+                        "tooltip": "Custom model identifier (for *_custom model versions).",
+                    },
+                ),
+                "prompt_biasing_locale": (
+                    IO.STRING,
+                    {
+                        "default": "",
+                        "tooltip": "Language/locale code (e.g., 'en-US', 'ja-JP').",
                     },
                 ),
             },
@@ -423,17 +450,19 @@ class FireflyTextToImageNode:
         content_class: str = "photo",
         size: str = "2048x2048 (1:1)",
         num_variations: int = 1,
-        seed: int = 1,
-        visual_intensity: int = 6,
+        seed: str = "",
+        visual_intensity: str = "",
         model_version: str = "image4_standard",
         negative_prompt: str = "",
         custom_model_id: str = "",
         prompt_biasing_locale: str = "",
-        style_upload_id: str = "",
-        style_strength: int = 50,
+        style_image: Optional[torch.Tensor] = None,
+        style_reference: str = "",
+        style_strength: str = "",
         style_preset: str = "none",
-        structure_upload_id: str = "",
-        structure_strength: int = 50,
+        structure_image: Optional[torch.Tensor] = None,
+        structure_reference: str = "",
+        structure_strength: str = "",
         upsampler_type: str = "default",
         prompt_suffix: str = "",
         unique_id: Optional[str] = None,
@@ -457,46 +486,93 @@ class FireflyTextToImageNode:
         client = await create_adobe_client(model_version=model_version)
 
         try:
-            # Build style configuration if style_upload_id is provided
+            # Validate style inputs (allow at most one)
+            style_inputs_provided = sum([
+                style_image is not None,
+                bool(style_reference),
+            ])
+            if style_inputs_provided > 1:
+                raise ValueError("Cannot provide multiple style inputs - choose only one: 'style_image' or 'style_reference'")
+
+            # Validate structure inputs (allow at most one)
+            structure_inputs_provided = sum([
+                structure_image is not None,
+                bool(structure_reference),
+            ])
+            if structure_inputs_provided > 1:
+                raise ValueError("Cannot provide multiple structure inputs - choose only one: 'structure_image' or 'structure_reference'")
+
+            # Console logging
+            console_log = ""
+            firefly_logs = []
+
+            # Build style configuration if style reference is provided
             style_config = None
-            if style_upload_id:
-                # Detect if style_upload_id is a presigned URL or an upload ID
-                if style_upload_id.lower().startswith("http"):
-                    # It's a presigned URL
+            if style_image is not None or style_reference:
+                # Determine style image source
+                if style_image is not None:
+                    # Upload to Firefly storage and get upload ID
+                    upload_id, firefly_log = await upload_image_for_firefly_api(style_image[0] if len(style_image.shape) == 4 else style_image)
+                    firefly_logs.append(("Style Image", firefly_log))
                     style_ref = FireflyStyleImageReferenceV3(
-                        source=FireflyPublicBinaryInput(url=style_upload_id)
+                        source=FireflyPublicBinaryInput(uploadId=upload_id)
                     )
                 else:
-                    # It's an upload ID
-                    style_ref = FireflyStyleImageReferenceV3(
-                        source=FireflyPublicBinaryInput(uploadId=style_upload_id)
-                    )
+                    # Use provided upload ID or presigned URL from node connection
+                    if style_reference.lower().startswith("http"):
+                        style_ref = FireflyStyleImageReferenceV3(
+                            source=FireflyPublicBinaryInput(url=style_reference)
+                        )
+                    else:
+                        style_ref = FireflyStyleImageReferenceV3(
+                            source=FireflyPublicBinaryInput(uploadId=style_reference)
+                        )
+
                 # Use style_preset if it's not "none"
                 presets_list = [style_preset] if style_preset and style_preset != "none" else None
+                # Convert strength to int if provided, otherwise use default (50)
+                strength_value = int(style_strength) if style_strength else 50
                 style_config = FireflyStyles(
                     imageReference=style_ref,
-                    strength=style_strength,
+                    strength=strength_value,
                     presets=presets_list,
                 )
 
-            # Build structure configuration if structure_upload_id is provided
+            # Build structure configuration if structure reference is provided
             structure_config = None
-            if structure_upload_id:
-                # Detect if structure_upload_id is a presigned URL or an upload ID
-                if structure_upload_id.lower().startswith("http"):
-                    # It's a presigned URL
+            if structure_image is not None or structure_reference:
+                # Determine structure image source
+                if structure_image is not None:
+                    # Upload to Firefly storage and get upload ID
+                    upload_id, firefly_log = await upload_image_for_firefly_api(structure_image[0] if len(structure_image.shape) == 4 else structure_image)
+                    firefly_logs.append(("Structure Image", firefly_log))
                     structure_ref = FireflyStructureImageReferenceV3(
-                        source=FireflyPublicBinaryInput(url=structure_upload_id)
+                        source=FireflyPublicBinaryInput(uploadId=upload_id)
                     )
                 else:
-                    # It's an upload ID
-                    structure_ref = FireflyStructureImageReferenceV3(
-                        source=FireflyPublicBinaryInput(uploadId=structure_upload_id)
-                    )
+                    # Use provided upload ID or presigned URL from node connection
+                    if structure_reference.lower().startswith("http"):
+                        structure_ref = FireflyStructureImageReferenceV3(
+                            source=FireflyPublicBinaryInput(url=structure_reference)
+                        )
+                    else:
+                        structure_ref = FireflyStructureImageReferenceV3(
+                            source=FireflyPublicBinaryInput(uploadId=structure_reference)
+                        )
+
+                # Convert strength to int if provided, otherwise use default (50)
+                strength_value = int(structure_strength) if structure_strength else 50
                 structure_config = FireflyStructure(
                     imageReference=structure_ref,
-                    strength=structure_strength,
+                    strength=strength_value,
                 )
+
+            # Convert visual_intensity to int if provided, otherwise use default (6)
+            visual_intensity_value = int(visual_intensity) if visual_intensity else 6
+
+            # Parse seed string to array of ints (supports comma-separated values)
+            # Examples: "" -> [1], "123" -> [123], "1,2,3,4" -> [1,2,3,4]
+            seed_values = [int(s.strip()) for s in seed.split(',') if s.strip()] if seed else [1]
 
             # Prepare request
             request = GenerateImagesRequest(
@@ -505,12 +581,12 @@ class FireflyTextToImageNode:
                 customModelId=custom_model_id if (custom_model_id and model_version.endswith("_custom")) else None,
                 size=FireflySize(width=width, height=height),
                 numVariations=num_variations,
-                seeds=[seed],
+                seeds=seed_values,
                 negativePrompt=negative_prompt if negative_prompt else None,
                 promptBiasingLocaleCode=prompt_biasing_locale if prompt_biasing_locale else None,
                 style=style_config,
                 structure=structure_config,
-                visualIntensity=visual_intensity if model_version != "image4_custom" else None,
+                visualIntensity=visual_intensity_value if model_version != "image4_custom" else None,
                 upsamplerType=FireflyUpsamplerType(upsampler_type) if model_version == "image4_custom" else None,
             )
 
@@ -520,10 +596,10 @@ class FireflyTextToImageNode:
                 "contentClass": content_class,
                 "size": {"width": width, "height": height},
                 "numVariations": num_variations,
-                "seeds": [seed],
+                "seeds": seed_values,
             }
             if model_version != "image4_custom":
-                request_body_dict["visualIntensity"] = visual_intensity
+                request_body_dict["visualIntensity"] = visual_intensity_value
             if custom_model_id and model_version.endswith("_custom"):
                 request_body_dict["customModelId"] = custom_model_id
             if prompt_biasing_locale:
@@ -531,22 +607,41 @@ class FireflyTextToImageNode:
             if negative_prompt:
                 request_body_dict["negativePrompt"] = negative_prompt
             if style_config:
-                request_body_dict["style"] = {
-                    "imageReference": {"source": {"uploadId": style_upload_id}} if not style_upload_id.lower().startswith("http") else {"source": {"url": style_upload_id}},
-                    "strength": style_strength,
-                }
+                # Determine which input was used for logging
+                if style_image is not None:
+                    request_body_dict["style"] = {
+                        "imageReference": {"source": {"uploadId": "[UPLOADED]"}},
+                        "strength": style_strength,
+                    }
+                else:
+                    request_body_dict["style"] = {
+                        "imageReference": {"source": {"uploadId": style_reference}} if not style_reference.lower().startswith("http") else {"source": {"url": style_reference}},
+                        "strength": style_strength,
+                    }
                 if style_preset and style_preset != "none":
                     request_body_dict["style"]["presets"] = [style_preset]
             if structure_config:
-                request_body_dict["structure"] = {
-                    "imageReference": {"source": {"uploadId": structure_upload_id}} if not structure_upload_id.lower().startswith("http") else {"source": {"url": structure_upload_id}},
-                    "strength": structure_strength,
-                }
+                # Determine which input was used for logging
+                if structure_image is not None:
+                    request_body_dict["structure"] = {
+                        "imageReference": {"source": {"uploadId": "[UPLOADED]"}},
+                        "strength": structure_strength,
+                    }
+                else:
+                    request_body_dict["structure"] = {
+                        "imageReference": {"source": {"uploadId": structure_reference}} if not structure_reference.lower().startswith("http") else {"source": {"url": structure_reference}},
+                        "strength": structure_strength,
+                    }
             if model_version == "image4_custom":
                 request_body_dict["upsamplerType"] = upsampler_type
 
-            # Console logging
-            console_log = ""
+            # Add Firefly upload logs if any
+            if firefly_logs:
+                console_log += "=======================================================\n"
+                for label, log in firefly_logs:
+                    console_log += f"{label}\n"
+                    console_log += log
+                console_log += "=======================================================\n\n"
 
             console_log += "=======================================================\n"
             console_log += "POST /v3/images/generate-async\n"
@@ -694,7 +789,7 @@ class FireflyTextToImageNode:
 class FireflyGenerativeFillNode:
     """
     Fill/inpaint masked areas of an image using Adobe Firefly.
-    Requires an image and a mask to specify the area to fill.
+    Provide either images (auto-uploads to Firefly storage) OR upload IDs/presigned URLs.
     """
 
     RETURN_TYPES = (IO.IMAGE, IO.STRING)
@@ -707,9 +802,23 @@ class FireflyGenerativeFillNode:
     @classmethod
     def INPUT_TYPES(s):
         return {
+            "optional": {
+                "image": (IO.IMAGE, {
+                    "tooltip": "Image to fill (auto-uploads to Firefly storage)"
+                }),
+                "image_reference": (IO.STRING, {
+                    "forceInput": True,
+                    "tooltip": "Image upload ID or presigned URL from storage"
+                }),
+                "mask": (IO.MASK, {
+                    "tooltip": "Mask for fill area (auto-uploads to Firefly storage)"
+                }),
+                "mask_reference": (IO.STRING, {
+                    "forceInput": True,
+                    "tooltip": "Mask upload ID or presigned URL from storage"
+                }),
+            },
             "required": {
-                "image": (IO.IMAGE,),
-                "mask": (IO.MASK,),
                 "num_variations": (
                     IO.INT,
                     {
@@ -756,106 +865,133 @@ class FireflyGenerativeFillNode:
 
     async def api_call(
         self,
-        image: torch.Tensor,
-        mask: torch.Tensor,
         num_variations: int,
         seed: int,
+        image: Optional[torch.Tensor] = None,
+        image_reference: Optional[str] = None,
+        mask: Optional[torch.Tensor] = None,
+        mask_reference: Optional[str] = None,
         prompt: str = "",
         negative_prompt: str = "",
         unique_id: Optional[str] = None,
     ):
+        # Validate inputs
+        if image is None and not image_reference:
+            raise ValueError("Must provide either 'image' or 'image_reference'")
+        if image is not None and image_reference:
+            raise ValueError("Cannot provide both 'image' and 'image_reference' - choose one")
+        if mask is None and not mask_reference:
+            raise ValueError("Must provide either 'mask' or 'mask_reference'")
+        if mask is not None and mask_reference:
+            raise ValueError("Cannot provide both 'mask' and 'mask_reference' - choose one")
+
         # Create Adobe API client
         client = await create_adobe_client()
 
         try:
-            # Prepare mask tensor
-            mask = resize_mask_to_image(mask, image, allow_gradient=False, add_channel_dim=True)
+            # Console logging
+            console_log = ""
 
+            # Determine image source
+            if image is not None:
+                # Upload to Firefly storage and get upload ID
+                upload_id, firefly_log = await upload_image_for_firefly_api(image[0] if len(image.shape) == 4 else image)
+                console_log += "=======================================================\n"
+                console_log += "Input Image\n"
+                console_log += firefly_log
+                console_log += "=======================================================\n\n"
+                image_source = FireflyPublicBinaryInput(uploadId=upload_id)
+            else:
+                # Use provided upload ID or presigned URL
+                if image_reference.lower().startswith("http"):
+                    image_source = FireflyPublicBinaryInput(url=image_reference)
+                else:
+                    image_source = FireflyPublicBinaryInput(uploadId=image_reference)
+
+            # Determine mask source
+            if mask is not None:
+                # Upload to Firefly storage and get upload ID
+                upload_id, firefly_log = await upload_image_for_firefly_api(mask[0] if len(mask.shape) == 4 else mask)
+                console_log += "=======================================================\n"
+                console_log += "Input Mask\n"
+                console_log += firefly_log
+                console_log += "=======================================================\n\n"
+                mask_source = FireflyPublicBinaryInput(uploadId=upload_id)
+            else:
+                # Use provided upload ID or presigned URL
+                if mask_reference.lower().startswith("http"):
+                    mask_source = FireflyPublicBinaryInput(url=mask_reference)
+                else:
+                    mask_source = FireflyPublicBinaryInput(uploadId=mask_reference)
+
+            # Prepare request
+            request = FillImageRequest(
+                image=FireflyInputImage(
+                    source=image_source
+                ),
+                mask=FireflyInputMask(
+                    source=mask_source
+                ),
+                prompt=prompt if prompt else None,
+                negativePrompt=negative_prompt if negative_prompt else None,
+                numVariations=num_variations,
+                seeds=[seed],
+            )
+
+            # Submit async job
+            submit_endpoint = ApiEndpoint(
+                path="/v3/images/fill-async",
+                method=HttpMethod.POST,
+                request_model=FillImageRequest,
+                response_model=AsyncAcceptResponse,
+            )
+
+            submit_op = SynchronousOperation(
+                endpoint=submit_endpoint,
+                request=request,
+                api_base="https://firefly-api.adobe.io",
+            )
+
+            submit_response: AsyncAcceptResponse = await submit_op.execute(client=client)
+
+            # Poll for completion
+            poll_endpoint = ApiEndpoint(
+                path=f"/v3/status/{submit_response.jobId}",
+                method=HttpMethod.GET,
+                request_model=EmptyRequest,
+                response_model=AsyncTaskResponse,
+            )
+
+            poll_op = PollingOperation(
+                poll_endpoint=poll_endpoint,
+                request=EmptyRequest(),
+                completed_statuses=["succeeded"],
+                failed_statuses=["failed", "canceled"],
+                status_extractor=lambda x: x.status,
+                api_base="https://firefly-api.adobe.io",
+                poll_interval=5.0,
+                max_poll_attempts=120,
+                node_id=unique_id,
+            )
+
+            result: AsyncTaskResponse = await poll_op.execute(client=client)
+
+            # Download outputs
+            if not result.outputs:
+                raise Exception("No outputs returned from Firefly API")
+
+            output_bytesio, presigned_urls = await download_firefly_outputs(
+                result.outputs,
+                unique_id=unique_id,
+            )
+
+            # Convert to tensors
             images = []
-            total = image.shape[0]
-            pbar = ProgressBar(total)
-
-            for i in range(total):
-                # Upload image and mask
-                image_upload_id = await upload_image_to_firefly(
-                    image=image[i],
-                )
-
-                mask_upload_id = await upload_image_to_firefly(
-                    image=mask[i:i+1],
-                )
-
-                # Prepare request
-                request = FillImageRequest(
-                    image=FireflyInputImage(
-                        source=FireflyPublicBinaryInput(uploadId=image_upload_id)
-                    ),
-                    mask=FireflyInputMask(
-                        source=FireflyPublicBinaryInput(uploadId=mask_upload_id)
-                    ),
-                    prompt=prompt if prompt else None,
-                    negativePrompt=negative_prompt if negative_prompt else None,
-                    numVariations=num_variations,
-                    seeds=[seed],
-                )
-
-                # Submit async job
-                submit_endpoint = ApiEndpoint(
-                    path="/v3/images/fill-async",
-                    method=HttpMethod.POST,
-                    request_model=FillImageRequest,
-                    response_model=AsyncAcceptResponse,
-                )
-
-                submit_op = SynchronousOperation(
-                    endpoint=submit_endpoint,
-                    request=request,
-                    api_base="https://firefly-api.adobe.io",
-                )
-
-                submit_response: AsyncAcceptResponse = await submit_op.execute(client=client)
-
-                # Poll for completion
-                poll_endpoint = ApiEndpoint(
-                    path=f"/v3/status/{submit_response.jobId}",
-                    method=HttpMethod.GET,
-                    request_model=EmptyRequest,
-                    response_model=AsyncTaskResponse,
-                )
-
-                poll_op = PollingOperation(
-                    poll_endpoint=poll_endpoint,
-                    request=EmptyRequest(),
-                    completed_statuses=["succeeded"],
-                    failed_statuses=["failed", "canceled"],
-                    status_extractor=lambda x: x.status,
-                    api_base="https://firefly-api.adobe.io",
-                    poll_interval=5.0,
-                    max_poll_attempts=120,
-                    node_id=unique_id,
-                )
-
-                result: AsyncTaskResponse = await poll_op.execute(client=client)
-
-                # Download outputs
-                if not result.outputs:
-                    raise Exception("No outputs returned from Firefly API")
-
-                output_bytesio = await download_firefly_outputs(
-                    result.outputs,
-                    unique_id=unique_id,
-                )
-
-                # Convert to tensors
-                batch_images = []
-                for bytesio in output_bytesio:
-                    img = bytesio_to_image_tensor(bytesio)
-                    if len(img.shape) < 4:
-                        img = img.unsqueeze(0)
-                    batch_images.append(img)
-
-                images.append(torch.cat(batch_images, dim=0))
-                pbar.update(1)
+            for bytesio in output_bytesio:
+                img = bytesio_to_image_tensor(bytesio)
+                if len(img.shape) < 4:
+                    img = img.unsqueeze(0)
+                images.append(img)
 
             images_tensor = torch.cat(images, dim=0)
             console_log = "Debug logging not yet implemented for this node"
@@ -871,7 +1007,7 @@ class FireflyGenerativeFillNode:
 class FireflyGenerativeExpandNode:
     """
     Expand/outpaint an image to a larger size using Adobe Firefly.
-    Extends the image beyond its original boundaries.
+    Provide either an image (auto-uploads to Firefly storage) OR an upload ID/presigned URL.
     """
 
     RETURN_TYPES = (IO.IMAGE, IO.STRING)
@@ -884,8 +1020,16 @@ class FireflyGenerativeExpandNode:
     @classmethod
     def INPUT_TYPES(s):
         return {
+            "optional": {
+                "image": (IO.IMAGE, {
+                    "tooltip": "Image to expand (auto-uploads to Firefly storage)"
+                }),
+                "image_reference": (IO.STRING, {
+                    "forceInput": True,
+                    "tooltip": "Upload ID or presigned URL from another node"
+                }),
+            },
             "required": {
-                "image": (IO.IMAGE,),
                 "output_width": (
                     IO.INT,
                     {
@@ -950,98 +1094,111 @@ class FireflyGenerativeExpandNode:
 
     async def api_call(
         self,
-        image: torch.Tensor,
         output_width: int,
         output_height: int,
         num_variations: int,
         seed: int,
+        image: Optional[torch.Tensor] = None,
+        image_reference: Optional[str] = None,
         prompt: str = "",
         negative_prompt: str = "",
         unique_id: Optional[str] = None,
     ):
+        # Validate that at least one input method is provided
+        if image is None and not image_reference:
+            raise ValueError("Must provide either 'image' or 'image_reference'")
+        if image is not None and image_reference:
+            raise ValueError("Cannot provide both 'image' and 'image_reference' - choose one")
+
         # Create Adobe API client
         client = await create_adobe_client()
 
         try:
+            # Console logging
+            console_log = ""
+
+            # Determine image source
+            if image is not None:
+                # Upload to Firefly storage and get upload ID
+                upload_id, firefly_log = await upload_image_for_firefly_api(image[0] if len(image.shape) == 4 else image)
+                console_log += "=======================================================\n"
+                console_log += "Input Image\n"
+                console_log += firefly_log
+                console_log += "=======================================================\n\n"
+                image_source = FireflyPublicBinaryInput(uploadId=upload_id)
+            else:
+                # Use provided upload ID or presigned URL from node connection
+                if image_reference.lower().startswith("http"):
+                    image_source = FireflyPublicBinaryInput(url=image_reference)
+                else:
+                    image_source = FireflyPublicBinaryInput(uploadId=image_reference)
+
+            # Prepare request
+            request = ExpandImageRequest(
+                image=FireflyInputImage(
+                    source=image_source
+                ),
+                size=FireflySize(width=output_width, height=output_height),
+                prompt=prompt if prompt else None,
+                negativePrompt=negative_prompt if negative_prompt else None,
+                numVariations=num_variations,
+                seeds=[seed],
+            )
+
+            # Submit async job
+            submit_endpoint = ApiEndpoint(
+                path="/v3/images/expand-async",
+                method=HttpMethod.POST,
+                request_model=ExpandImageRequest,
+                response_model=AsyncAcceptResponse,
+            )
+
+            submit_op = SynchronousOperation(
+                endpoint=submit_endpoint,
+                request=request,
+                api_base="https://firefly-api.adobe.io",
+            )
+
+            submit_response: AsyncAcceptResponse = await submit_op.execute(client=client)
+
+            # Poll for completion
+            poll_endpoint = ApiEndpoint(
+                path=f"/v3/status/{submit_response.jobId}",
+                method=HttpMethod.GET,
+                request_model=EmptyRequest,
+                response_model=AsyncTaskResponse,
+            )
+
+            poll_op = PollingOperation(
+                poll_endpoint=poll_endpoint,
+                request=EmptyRequest(),
+                completed_statuses=["succeeded"],
+                failed_statuses=["failed", "canceled"],
+                status_extractor=lambda x: x.status,
+                api_base="https://firefly-api.adobe.io",
+                poll_interval=5.0,
+                max_poll_attempts=120,
+                node_id=unique_id,
+            )
+
+            result: AsyncTaskResponse = await poll_op.execute(client=client)
+
+            # Download outputs
+            if not result.outputs:
+                raise Exception("No outputs returned from Firefly API")
+
+            output_bytesio, presigned_urls = await download_firefly_outputs(
+                result.outputs,
+                unique_id=unique_id,
+            )
+
+            # Convert to tensors
             images = []
-            total = image.shape[0]
-            pbar = ProgressBar(total)
-
-            for i in range(total):
-                # Upload image
-                image_upload_id = await upload_image_to_firefly(
-                    image=image[i],
-                )
-
-                # Prepare request
-                request = ExpandImageRequest(
-                    image=FireflyInputImage(
-                        source=FireflyPublicBinaryInput(uploadId=image_upload_id)
-                    ),
-                    size=FireflySize(width=output_width, height=output_height),
-                    prompt=prompt if prompt else None,
-                    negativePrompt=negative_prompt if negative_prompt else None,
-                    numVariations=num_variations,
-                    seeds=[seed],
-                )
-
-                # Submit async job
-                submit_endpoint = ApiEndpoint(
-                    path="/v3/images/expand-async",
-                    method=HttpMethod.POST,
-                    request_model=ExpandImageRequest,
-                    response_model=AsyncAcceptResponse,
-                )
-
-                submit_op = SynchronousOperation(
-                    endpoint=submit_endpoint,
-                    request=request,
-                    api_base="https://firefly-api.adobe.io",
-                )
-
-                submit_response: AsyncAcceptResponse = await submit_op.execute(client=client)
-
-                # Poll for completion
-                poll_endpoint = ApiEndpoint(
-                    path=f"/v3/status/{submit_response.jobId}",
-                    method=HttpMethod.GET,
-                    request_model=EmptyRequest,
-                    response_model=AsyncTaskResponse,
-                )
-
-                poll_op = PollingOperation(
-                    poll_endpoint=poll_endpoint,
-                    request=EmptyRequest(),
-                    completed_statuses=["succeeded"],
-                    failed_statuses=["failed", "canceled"],
-                    status_extractor=lambda x: x.status,
-                    api_base="https://firefly-api.adobe.io",
-                    poll_interval=5.0,
-                    max_poll_attempts=120,
-                    node_id=unique_id,
-                )
-
-                result: AsyncTaskResponse = await poll_op.execute(client=client)
-
-                # Download outputs
-                if not result.outputs:
-                    raise Exception("No outputs returned from Firefly API")
-
-                output_bytesio = await download_firefly_outputs(
-                    result.outputs,
-                    unique_id=unique_id,
-                )
-
-                # Convert to tensors
-                batch_images = []
-                for bytesio in output_bytesio:
-                    img = bytesio_to_image_tensor(bytesio)
-                    if len(img.shape) < 4:
-                        img = img.unsqueeze(0)
-                    batch_images.append(img)
-
-                images.append(torch.cat(batch_images, dim=0))
-                pbar.update(1)
+            for bytesio in output_bytesio:
+                img = bytesio_to_image_tensor(bytesio)
+                if len(img.shape) < 4:
+                    img = img.unsqueeze(0)
+                images.append(img)
 
             images_tensor = torch.cat(images, dim=0)
             console_log = "Debug logging not yet implemented for this node"
@@ -1057,6 +1214,7 @@ class FireflyGenerativeExpandNode:
 class FireflyGenerateSimilarNode:
     """
     Generate similar images based on a reference image using Adobe Firefly.
+    Provide either an image (auto-uploads to Firefly storage) OR an upload ID/presigned URL.
     """
 
     RETURN_TYPES = (IO.IMAGE, IO.STRING)
@@ -1069,8 +1227,16 @@ class FireflyGenerateSimilarNode:
     @classmethod
     def INPUT_TYPES(s):
         return {
+            "optional": {
+                "image": (IO.IMAGE, {
+                    "tooltip": "Reference image (auto-uploads to Firefly storage)"
+                }),
+                "image_reference": (IO.STRING, {
+                    "forceInput": True,
+                    "tooltip": "Upload ID or presigned URL from storage"
+                }),
+            },
             "required": {
-                "image": (IO.IMAGE,),
                 "num_variations": (
                     IO.INT,
                     {
@@ -1117,95 +1283,108 @@ class FireflyGenerateSimilarNode:
 
     async def api_call(
         self,
-        image: torch.Tensor,
         num_variations: int,
         seed: int,
+        image: Optional[torch.Tensor] = None,
+        image_reference: Optional[str] = None,
         prompt: str = "",
         negative_prompt: str = "",
         unique_id: Optional[str] = None,
     ):
+        # Validate inputs
+        if image is None and not image_reference:
+            raise ValueError("Must provide either 'image' or 'image_reference'")
+        if image is not None and image_reference:
+            raise ValueError("Cannot provide both 'image' and 'image_reference' - choose one")
+
         # Create Adobe API client
         client = await create_adobe_client()
 
         try:
+            # Console logging
+            console_log = ""
+
+            # Determine image source
+            if image is not None:
+                # Upload to Firefly storage and get upload ID
+                upload_id, firefly_log = await upload_image_for_firefly_api(image[0] if len(image.shape) == 4 else image)
+                console_log += "=======================================================\n"
+                console_log += "Reference Image\n"
+                console_log += firefly_log
+                console_log += "=======================================================\n\n"
+                image_source = FireflyPublicBinaryInput(uploadId=upload_id)
+            else:
+                # Use provided upload ID or presigned URL
+                if image_reference.lower().startswith("http"):
+                    image_source = FireflyPublicBinaryInput(url=image_reference)
+                else:
+                    image_source = FireflyPublicBinaryInput(uploadId=image_reference)
+
+            # Prepare request
+            request = GenerateSimilarImagesRequest(
+                image=FireflyInputImage(
+                    source=image_source
+                ),
+                prompt=prompt if prompt else None,
+                negativePrompt=negative_prompt if negative_prompt else None,
+                numVariations=num_variations,
+                seeds=[seed],
+            )
+
+            # Submit async job
+            submit_endpoint = ApiEndpoint(
+                path="/v3/images/generate-similar-async",
+                method=HttpMethod.POST,
+                request_model=GenerateSimilarImagesRequest,
+                response_model=AsyncAcceptResponse,
+            )
+
+            submit_op = SynchronousOperation(
+                endpoint=submit_endpoint,
+                request=request,
+                api_base="https://firefly-api.adobe.io",
+            )
+
+            submit_response: AsyncAcceptResponse = await submit_op.execute(client=client)
+
+            # Poll for completion
+            poll_endpoint = ApiEndpoint(
+                path=f"/v3/status/{submit_response.jobId}",
+                method=HttpMethod.GET,
+                request_model=EmptyRequest,
+                response_model=AsyncTaskResponse,
+            )
+
+            poll_op = PollingOperation(
+                poll_endpoint=poll_endpoint,
+                request=EmptyRequest(),
+                completed_statuses=["succeeded"],
+                failed_statuses=["failed", "canceled"],
+                status_extractor=lambda x: x.status,
+                api_base="https://firefly-api.adobe.io",
+                poll_interval=5.0,
+                max_poll_attempts=120,
+                node_id=unique_id,
+            )
+
+            result: AsyncTaskResponse = await poll_op.execute(client=client)
+
+            # Download outputs
+            if not result.outputs:
+                raise Exception("No outputs returned from Firefly API")
+
+            output_bytesio, presigned_urls = await download_firefly_outputs(
+                result.outputs,
+                unique_id=unique_id,
+            )
+
+            # Convert to tensors
             images = []
-            total = image.shape[0]
-            pbar = ProgressBar(total)
-
-            for i in range(total):
-                # Upload image
-                image_upload_id = await upload_image_to_firefly(
-                    image=image[i],
-                )
-
-                # Prepare request
-                request = GenerateSimilarImagesRequest(
-                    image=FireflyInputImage(
-                        source=FireflyPublicBinaryInput(uploadId=image_upload_id)
-                    ),
-                    prompt=prompt if prompt else None,
-                    negativePrompt=negative_prompt if negative_prompt else None,
-                    numVariations=num_variations,
-                    seeds=[seed],
-                )
-
-                # Submit async job
-                submit_endpoint = ApiEndpoint(
-                    path="/v3/images/generate-similar-async",
-                    method=HttpMethod.POST,
-                    request_model=GenerateSimilarImagesRequest,
-                    response_model=AsyncAcceptResponse,
-                )
-
-                submit_op = SynchronousOperation(
-                    endpoint=submit_endpoint,
-                    request=request,
-                    api_base="https://firefly-api.adobe.io",
-                )
-
-                submit_response: AsyncAcceptResponse = await submit_op.execute(client=client)
-
-                # Poll for completion
-                poll_endpoint = ApiEndpoint(
-                    path=f"/v3/status/{submit_response.jobId}",
-                    method=HttpMethod.GET,
-                    request_model=EmptyRequest,
-                    response_model=AsyncTaskResponse,
-                )
-
-                poll_op = PollingOperation(
-                    poll_endpoint=poll_endpoint,
-                    request=EmptyRequest(),
-                    completed_statuses=["succeeded"],
-                    failed_statuses=["failed", "canceled"],
-                    status_extractor=lambda x: x.status,
-                    api_base="https://firefly-api.adobe.io",
-                    poll_interval=5.0,
-                    max_poll_attempts=120,
-                    node_id=unique_id,
-                )
-
-                result: AsyncTaskResponse = await poll_op.execute(client=client)
-
-                # Download outputs
-                if not result.outputs:
-                    raise Exception("No outputs returned from Firefly API")
-
-                output_bytesio = await download_firefly_outputs(
-                    result.outputs,
-                    unique_id=unique_id,
-                )
-
-                # Convert to tensors
-                batch_images = []
-                for bytesio in output_bytesio:
-                    img = bytesio_to_image_tensor(bytesio)
-                    if len(img.shape) < 4:
-                        img = img.unsqueeze(0)
-                    batch_images.append(img)
-
-                images.append(torch.cat(batch_images, dim=0))
-                pbar.update(1)
+            for bytesio in output_bytesio:
+                img = bytesio_to_image_tensor(bytesio)
+                if len(img.shape) < 4:
+                    img = img.unsqueeze(0)
+                images.append(img)
 
             images_tensor = torch.cat(images, dim=0)
             console_log = "Debug logging not yet implemented for this node"
@@ -1221,7 +1400,7 @@ class FireflyGenerateSimilarNode:
 class FireflyGenerateObjectCompositeNode:
     """
     Generate and composite an object into a background scene using Adobe Firefly.
-    Requires a background image, a mask for object placement, and a prompt describing the object.
+    Provide either images (auto-uploads to Firefly storage) OR upload IDs/presigned URLs.
     """
 
     RETURN_TYPES = (IO.IMAGE, IO.STRING)
@@ -1234,9 +1413,23 @@ class FireflyGenerateObjectCompositeNode:
     @classmethod
     def INPUT_TYPES(s):
         return {
+            "optional": {
+                "image": (IO.IMAGE, {
+                    "tooltip": "Background image (auto-uploads to Firefly storage)"
+                }),
+                "image_reference": (IO.STRING, {
+                    "forceInput": True,
+                    "tooltip": "Background image upload ID or presigned URL from storage"
+                }),
+                "mask": (IO.MASK, {
+                    "tooltip": "Mask for object placement (auto-uploads to Firefly storage)"
+                }),
+                "mask_reference": (IO.STRING, {
+                    "forceInput": True,
+                    "tooltip": "Mask upload ID or presigned URL from storage"
+                }),
+            },
             "required": {
-                "image": (IO.IMAGE,),
-                "mask": (IO.MASK,),
                 "prompt": (
                     IO.STRING,
                     {
@@ -1282,108 +1475,135 @@ class FireflyGenerateObjectCompositeNode:
 
     async def api_call(
         self,
-        image: torch.Tensor,
-        mask: torch.Tensor,
         prompt: str,
         num_variations: int,
         seed: int,
+        image: Optional[torch.Tensor] = None,
+        image_reference: Optional[str] = None,
+        mask: Optional[torch.Tensor] = None,
+        mask_reference: Optional[str] = None,
         negative_prompt: str = "",
         unique_id: Optional[str] = None,
     ):
         validate_string(prompt, strip_whitespace=False, max_length=1024)
 
+        # Validate inputs
+        if image is None and not image_reference:
+            raise ValueError("Must provide either 'image' or 'image_reference'")
+        if image is not None and image_reference:
+            raise ValueError("Cannot provide both 'image' and 'image_reference' - choose one")
+        if mask is None and not mask_reference:
+            raise ValueError("Must provide either 'mask' or 'mask_reference'")
+        if mask is not None and mask_reference:
+            raise ValueError("Cannot provide both 'mask' and 'mask_reference' - choose one")
+
         # Create Adobe API client
         client = await create_adobe_client()
 
         try:
-            # Prepare mask tensor
-            mask = resize_mask_to_image(mask, image, allow_gradient=False, add_channel_dim=True)
+            # Console logging
+            console_log = ""
 
+            # Determine image source
+            if image is not None:
+                # Upload to Firefly storage and get upload ID
+                upload_id, firefly_log = await upload_image_for_firefly_api(image[0] if len(image.shape) == 4 else image)
+                console_log += "=======================================================\n"
+                console_log += "Background Image\n"
+                console_log += firefly_log
+                console_log += "=======================================================\n\n"
+                image_source = FireflyPublicBinaryInput(uploadId=upload_id)
+            else:
+                # Use provided upload ID or presigned URL
+                if image_reference.lower().startswith("http"):
+                    image_source = FireflyPublicBinaryInput(url=image_reference)
+                else:
+                    image_source = FireflyPublicBinaryInput(uploadId=image_reference)
+
+            # Determine mask source
+            if mask is not None:
+                # Upload to Firefly storage and get upload ID
+                upload_id, firefly_log = await upload_image_for_firefly_api(mask[0] if len(mask.shape) == 4 else mask)
+                console_log += "=======================================================\n"
+                console_log += "Object Placement Mask\n"
+                console_log += firefly_log
+                console_log += "=======================================================\n\n"
+                mask_source = FireflyPublicBinaryInput(uploadId=upload_id)
+            else:
+                # Use provided upload ID or presigned URL
+                if mask_reference.lower().startswith("http"):
+                    mask_source = FireflyPublicBinaryInput(url=mask_reference)
+                else:
+                    mask_source = FireflyPublicBinaryInput(uploadId=mask_reference)
+
+            # Prepare request
+            request = GenerateObjectCompositeRequest(
+                image=FireflyInputImage(
+                    source=image_source
+                ),
+                mask=FireflyInputMask(
+                    source=mask_source
+                ),
+                prompt=prompt,
+                negativePrompt=negative_prompt if negative_prompt else None,
+                numVariations=num_variations,
+                seeds=[seed],
+            )
+
+            # Submit async job
+            submit_endpoint = ApiEndpoint(
+                path="/v3/images/generate-object-composite-async",
+                method=HttpMethod.POST,
+                request_model=GenerateObjectCompositeRequest,
+                response_model=AsyncAcceptResponse,
+            )
+
+            submit_op = SynchronousOperation(
+                endpoint=submit_endpoint,
+                request=request,
+                api_base="https://firefly-api.adobe.io",
+            )
+
+            submit_response: AsyncAcceptResponse = await submit_op.execute(client=client)
+
+            # Poll for completion
+            poll_endpoint = ApiEndpoint(
+                path=f"/v3/status/{submit_response.jobId}",
+                method=HttpMethod.GET,
+                request_model=EmptyRequest,
+                response_model=AsyncTaskResponse,
+            )
+
+            poll_op = PollingOperation(
+                poll_endpoint=poll_endpoint,
+                request=EmptyRequest(),
+                completed_statuses=["succeeded"],
+                failed_statuses=["failed", "canceled"],
+                status_extractor=lambda x: x.status,
+                api_base="https://firefly-api.adobe.io",
+                poll_interval=5.0,
+                max_poll_attempts=120,
+                node_id=unique_id,
+            )
+
+            result: AsyncTaskResponse = await poll_op.execute(client=client)
+
+            # Download outputs
+            if not result.outputs:
+                raise Exception("No outputs returned from Firefly API")
+
+            output_bytesio, presigned_urls = await download_firefly_outputs(
+                result.outputs,
+                unique_id=unique_id,
+            )
+
+            # Convert to tensors
             images = []
-            total = image.shape[0]
-            pbar = ProgressBar(total)
-
-            for i in range(total):
-                # Upload image and mask
-                image_upload_id = await upload_image_to_firefly(
-                    image=image[i],
-                )
-
-                mask_upload_id = await upload_image_to_firefly(
-                    image=mask[i:i+1],
-                )
-
-                # Prepare request
-                request = GenerateObjectCompositeRequest(
-                    image=FireflyInputImage(
-                        source=FireflyPublicBinaryInput(uploadId=image_upload_id)
-                    ),
-                    mask=FireflyInputMask(
-                        source=FireflyPublicBinaryInput(uploadId=mask_upload_id)
-                    ),
-                    prompt=prompt,
-                    negativePrompt=negative_prompt if negative_prompt else None,
-                    numVariations=num_variations,
-                    seeds=[seed],
-                )
-
-                # Submit async job
-                submit_endpoint = ApiEndpoint(
-                    path="/v3/images/generate-object-composite-async",
-                    method=HttpMethod.POST,
-                    request_model=GenerateObjectCompositeRequest,
-                    response_model=AsyncAcceptResponse,
-                )
-
-                submit_op = SynchronousOperation(
-                    endpoint=submit_endpoint,
-                    request=request,
-                    api_base="https://firefly-api.adobe.io",
-                )
-
-                submit_response: AsyncAcceptResponse = await submit_op.execute(client=client)
-
-                # Poll for completion
-                poll_endpoint = ApiEndpoint(
-                    path=f"/v3/status/{submit_response.jobId}",
-                    method=HttpMethod.GET,
-                    request_model=EmptyRequest,
-                    response_model=AsyncTaskResponse,
-                )
-
-                poll_op = PollingOperation(
-                    poll_endpoint=poll_endpoint,
-                    request=EmptyRequest(),
-                    completed_statuses=["succeeded"],
-                    failed_statuses=["failed", "canceled"],
-                    status_extractor=lambda x: x.status,
-                    api_base="https://firefly-api.adobe.io",
-                    poll_interval=5.0,
-                    max_poll_attempts=120,
-                    node_id=unique_id,
-                )
-
-                result: AsyncTaskResponse = await poll_op.execute(client=client)
-
-                # Download outputs
-                if not result.outputs:
-                    raise Exception("No outputs returned from Firefly API")
-
-                output_bytesio = await download_firefly_outputs(
-                    result.outputs,
-                    unique_id=unique_id,
-                )
-
-                # Convert to tensors
-                batch_images = []
-                for bytesio in output_bytesio:
-                    img = bytesio_to_image_tensor(bytesio)
-                    if len(img.shape) < 4:
-                        img = img.unsqueeze(0)
-                    batch_images.append(img)
-
-                images.append(torch.cat(batch_images, dim=0))
-                pbar.update(1)
+            for bytesio in output_bytesio:
+                img = bytesio_to_image_tensor(bytesio)
+                if len(img.shape) < 4:
+                    img = img.unsqueeze(0)
+                images.append(img)
 
             images_tensor = torch.cat(images, dim=0)
             console_log = "Debug logging not yet implemented for this node"

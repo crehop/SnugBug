@@ -115,35 +115,32 @@ async def upload_image_to_firefly(
     client = await create_adobe_client()
 
     try:
-        # Step 1: Request upload URL
-        upload_request_endpoint = ApiEndpoint(
-            path="/v2/storage/image",
-            method=HttpMethod.POST,
-            request_model=UploadImageRequest,
-            response_model=UploadImageResponse,
-        )
-
-        upload_request_op = SynchronousOperation(
-            endpoint=upload_request_endpoint,
-            request=UploadImageRequest(
-                name="image.png",
-                type=FireflyImageFormat.IMAGE_PNG,
-            ),
-            api_base="https://firefly-api.adobe.io",
-        )
-
-        upload_response: UploadImageResponse = await upload_request_op.execute(client=client)
-
-        # Step 2: Upload the image to the presigned URL
+        # Convert tensor to bytes
         image_bytes = tensor_to_bytesio(image, total_pixels=total_pixels)
+        image_bytes.seek(0)  # Reset buffer position
+        data = image_bytes.read()
 
-        await ApiClient.upload_file(
-            upload_url=upload_response.uploadUrl,
-            file=image_bytes,
-            content_type=FireflyImageFormat.IMAGE_PNG.value,
-        )
+        # Build headers
+        headers = client.get_headers()
+        headers["Content-Type"] = FireflyImageFormat.IMAGE_PNG.value
 
-        return upload_response.uploadId
+        # Make direct HTTP request with raw binary data
+        url = client.base_url.rstrip("/") + "/v2/storage/image"
+        session = await client._get_session()
+
+        async with session.post(url, data=data, headers=headers, ssl=client.verify_ssl) as resp:
+            resp.raise_for_status()
+            response_json = await resp.json()
+
+        # Extract upload ID from response {"images": [{"id": "..."}]}
+        if "images" in response_json and len(response_json["images"]) > 0:
+            upload_id = response_json["images"][0]["id"]
+            return upload_id
+        else:
+            raise Exception(f"Unexpected response format: {response_json}")
+
+    except Exception as e:
+        raise Exception(f"Failed to upload image to Firefly: {str(e)}")
     finally:
         await client.close()
 
@@ -935,7 +932,7 @@ class FireflyGenerativeExpandNodeV2:
                     {
                         "default": 2048,
                         "min": 1,
-                        "max": 2688,
+                        "max": 3999,
                         "tooltip": "Width of expanded image in pixels.",
                     },
                 ),
@@ -944,7 +941,7 @@ class FireflyGenerativeExpandNodeV2:
                     {
                         "default": 2048,
                         "min": 1,
-                        "max": 2688,
+                        "max": 3999,
                         "tooltip": "Height of expanded image in pixels.",
                     },
                 ),
