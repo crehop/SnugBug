@@ -1528,8 +1528,8 @@ class FireflyGenerateSimilarNodeV2:
     - Dual input support for images
     """
 
-    RETURN_TYPES = ("IMAGE", "STRING", "STRING")
-    RETURN_NAMES = ("image", "image_url", "debug_log")
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("image", "image_url", "image_url_2", "image_url_3", "image_url_4", "debug_log")
     FUNCTION = "api_call"
     API_NODE = True
     CATEGORY = "api node/firefly v2"
@@ -1628,6 +1628,16 @@ class FireflyGenerateSimilarNodeV2:
             total = image.shape[0] if image is not None else 1
             pbar = ProgressBar(total)
 
+            # Build debug log for first iteration
+            console_log = self._build_debug_log(
+                num_variations=num_variations,
+                seed=seed,
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                image=image,
+                image_reference=image_reference,
+            )
+
             for i in range(total):
                 # Determine image source
                 if image is not None:
@@ -1668,6 +1678,18 @@ class FireflyGenerateSimilarNodeV2:
 
                 submit_response = await submit_op.execute(client=client)
 
+                # Log response for first iteration only
+                if i == 0:
+                    console_log += f"\nResponse: 202 Accepted\n"
+                    console_log += f"  jobId: {submit_response.jobId}\n"
+
+                # Log polling section for first iteration only
+                if i == 0:
+                    console_log += f"\n{'='*55}\n"
+                    console_log += f"GET /v3/status/{submit_response.jobId.split(':')[-1][:8]}...\n"
+                    console_log += f"{'-'*55}\n"
+                    console_log += f"Polling for job completion...\n"
+
                 # Poll for completion
                 poll_endpoint = ApiEndpoint(
                     path=f"/v3/status/{submit_response.jobId}",
@@ -1690,14 +1712,35 @@ class FireflyGenerateSimilarNodeV2:
 
                 result = await poll_op.execute(client=client)
 
-                # Download outputs
+                # Log result for first iteration only
+                if i == 0:
+                    console_log += f"\nResponse: 200 OK\n"
+                    console_log += f"  status: {result.status}\n"
+                    console_log += f"  jobId: {result.jobId}\n"
+                    console_log += f"  outputs: {len(result.outputs) if result.outputs else 0} image(s)\n"
+
+                # Validate outputs
                 if not result.outputs:
+                    if i == 0:
+                        console_log += f"\n{'='*55}\n"
+                        console_log += f"ERROR: No outputs in response\n"
+                        console_log += f"  status: {result.status}\n"
                     raise Exception("No outputs returned from Firefly API")
+
+                # Log download start for first iteration only
+                if i == 0:
+                    console_log += f"\n{'='*55}\n"
+                    console_log += f"Downloading {len(result.outputs)} output(s)...\n"
 
                 output_bytesio, presigned_urls = await download_firefly_outputs(
                     result.outputs,
                     unique_id=unique_id,
                 )
+
+                # Log download completion for first iteration only
+                if i == 0:
+                    console_log += f"[OK] Downloaded {len(output_bytesio)} image(s)\n"
+                    console_log += f"{'='*55}\n"
 
                 all_urls.extend(presigned_urls)
 
@@ -1713,15 +1756,59 @@ class FireflyGenerateSimilarNodeV2:
                 pbar.update(1)
 
             images_tensor = torch.cat(images, dim=0)
-            console_log = f"Generate Similar completed: {total} image(s) processed"
 
-            # Return first URL (typically only 1 image is generated)
+            # Add presigned URLs to console log
+            console_log += f"\nPresigned URLs (valid for 1 hour):\n"
+            for idx, url in enumerate(all_urls, 1):
+                console_log += f"  [{idx}] {url}\n"
+            console_log += f"{'='*55}\n"
+
+            # Return all 4 URLs (pad with empty strings if fewer generated)
             image_url = all_urls[0] if len(all_urls) > 0 else ""
+            image_url_2 = all_urls[1] if len(all_urls) > 1 else ""
+            image_url_3 = all_urls[2] if len(all_urls) > 2 else ""
+            image_url_4 = all_urls[3] if len(all_urls) > 3 else ""
 
-            return (images_tensor, image_url, console_log)
+            return (images_tensor, image_url, image_url_2, image_url_3, image_url_4, console_log)
 
         finally:
             await client.close()
+
+    def _build_debug_log(
+        self,
+        num_variations: int,
+        seed: str,
+        prompt: str,
+        negative_prompt: str,
+        image: Optional[torch.Tensor],
+        image_reference: str,
+    ) -> str:
+        """Build formatted debug log for console output."""
+        log = "=" * 55 + "\n"
+        log += "POST /v3/images/generate-similar-async\n"
+        log += "-" * 55 + "\n"
+        log += f"Headers:\n"
+        log += f"  x-model-version: image3\n"  # Generate Similar uses default image3
+        log += f"\nRequest Body:\n"
+
+        # Image source
+        if image is not None:
+            log += f"  image: [UPLOADED IMAGE]\n"
+        else:
+            log += f"  image: {image_reference}\n"
+
+        log += f"  numVariations: {num_variations}\n"
+
+        if seed and seed.strip():
+            log += f"  seeds: [{seed}]\n"
+
+        if prompt and prompt.strip():
+            log += f"  prompt: {prompt[:50]}...\n" if len(prompt) > 50 else f"  prompt: {prompt}\n"
+
+        if negative_prompt and negative_prompt.strip():
+            log += f"  negativePrompt: {negative_prompt[:30]}...\n" if len(negative_prompt) > 30 else f"  negativePrompt: {negative_prompt}\n"
+
+        return log
 
 
 class FireflyGenerateObjectCompositeNodeV2:
