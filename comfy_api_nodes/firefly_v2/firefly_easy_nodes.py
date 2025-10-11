@@ -804,10 +804,11 @@ class FireflyGenerativeFillNodeV2:
     - Cleaner code structure
     - Better batch processing
     - Enhanced error handling
+    - Dual input support for images and masks
     """
 
-    RETURN_TYPES = ("IMAGE", "STRING")
-    RETURN_NAMES = ("image", "debug_log")
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("image", "image_url_1", "image_url_2", "image_url_3", "image_url_4", "debug_log")
     FUNCTION = "api_call"
     API_NODE = True
     CATEGORY = "api node/firefly v2"
@@ -815,9 +816,37 @@ class FireflyGenerativeFillNodeV2:
     @classmethod
     def INPUT_TYPES(cls):
         return {
+            "optional": {
+                "image": (
+                    "IMAGE",
+                    {
+                        "tooltip": "Image to fill (auto-uploads to Firefly storage).",
+                    },
+                ),
+                "image_reference": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "forceInput": True,
+                        "tooltip": "Image upload ID or presigned URL from another node.",
+                    },
+                ),
+                "mask": (
+                    "MASK",
+                    {
+                        "tooltip": "Mask for fill area (auto-uploads to Firefly storage).",
+                    },
+                ),
+                "mask_reference": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "forceInput": True,
+                        "tooltip": "Mask upload ID or presigned URL from another node.",
+                    },
+                ),
+            },
             "required": {
-                "image": ("IMAGE",),
-                "mask": ("MASK",),
                 "num_variations": (
                     "INT",
                     {
@@ -861,15 +890,27 @@ class FireflyGenerativeFillNodeV2:
 
     async def api_call(
         self,
-        image: torch.Tensor,
-        mask: torch.Tensor,
         num_variations: int,
         seed: str = "",
+        image: Optional[torch.Tensor] = None,
+        image_reference: str = "",
+        mask: Optional[torch.Tensor] = None,
+        mask_reference: str = "",
         prompt: str = "",
         negative_prompt: str = "",
         unique_id: Optional[str] = None,
     ):
         """Fill masked areas using Firefly API."""
+        # Validate inputs
+        if image is None and not image_reference:
+            raise ValueError("Must provide either 'image' or 'image_reference'")
+        if image is not None and image_reference:
+            raise ValueError("Cannot provide both 'image' and 'image_reference' - choose only one")
+        if mask is None and not mask_reference:
+            raise ValueError("Must provide either 'mask' or 'mask_reference'")
+        if mask is not None and mask_reference:
+            raise ValueError("Cannot provide both 'mask' and 'mask_reference' - choose only one")
+
         # Parse seeds
         seeds_list = None
         if seed and seed.strip():
@@ -881,25 +922,47 @@ class FireflyGenerativeFillNodeV2:
         client = await create_adobe_client()
 
         try:
-            # Prepare mask
-            mask = resize_mask_to_image(mask, image, allow_gradient=False, add_channel_dim=True)
+            # Prepare mask if provided as tensor
+            if mask is not None and image is not None:
+                mask = resize_mask_to_image(mask, image, allow_gradient=False, add_channel_dim=True)
 
             images = []
-            total = image.shape[0]
+            all_urls = []
+            total = image.shape[0] if image is not None else 1
             pbar = ProgressBar(total)
 
             for i in range(total):
-                # Upload image and mask
-                image_upload_id = await upload_image_to_firefly(image=image[i])
-                mask_upload_id = await upload_image_to_firefly(image=mask[i:i+1])
+                # Determine image source
+                if image is not None:
+                    # Upload to Firefly storage and get upload ID
+                    upload_id = await upload_image_to_firefly(image=image[i])
+                    image_source = FireflyPublicBinaryInput(uploadId=upload_id)
+                else:
+                    # Use provided upload ID or presigned URL
+                    if image_reference.lower().startswith("http"):
+                        image_source = FireflyPublicBinaryInput(url=image_reference)
+                    else:
+                        image_source = FireflyPublicBinaryInput(uploadId=image_reference)
+
+                # Determine mask source
+                if mask is not None:
+                    # Upload to Firefly storage and get upload ID
+                    mask_upload_id = await upload_image_to_firefly(image=mask[i:i+1])
+                    mask_source = FireflyPublicBinaryInput(uploadId=mask_upload_id)
+                else:
+                    # Use provided upload ID or presigned URL
+                    if mask_reference.lower().startswith("http"):
+                        mask_source = FireflyPublicBinaryInput(url=mask_reference)
+                    else:
+                        mask_source = FireflyPublicBinaryInput(uploadId=mask_reference)
 
                 # Prepare request
                 request = FillImageRequest(
                     image=FireflyInputImage(
-                        source=FireflyPublicBinaryInput(uploadId=image_upload_id)
+                        source=image_source
                     ),
                     mask=FireflyInputMask(
-                        source=FireflyPublicBinaryInput(uploadId=mask_upload_id)
+                        source=mask_source
                     ),
                     prompt=prompt if prompt else None,
                     negativePrompt=negative_prompt if negative_prompt else None,
@@ -949,10 +1012,12 @@ class FireflyGenerativeFillNodeV2:
                 if not result.outputs:
                     raise Exception("No outputs returned from Firefly API")
 
-                output_bytesio, _ = await download_firefly_outputs(
+                output_bytesio, presigned_urls = await download_firefly_outputs(
                     result.outputs,
                     unique_id=unique_id,
                 )
+
+                all_urls.extend(presigned_urls)
 
                 # Convert to tensors
                 batch_images = []
@@ -968,7 +1033,13 @@ class FireflyGenerativeFillNodeV2:
             images_tensor = torch.cat(images, dim=0)
             console_log = f"Generative Fill completed: {total} image(s) processed"
 
-            return (images_tensor, console_log)
+            # Split URLs into individual outputs (up to 4)
+            url_1 = all_urls[0] if len(all_urls) > 0 else ""
+            url_2 = all_urls[1] if len(all_urls) > 1 else ""
+            url_3 = all_urls[2] if len(all_urls) > 2 else ""
+            url_4 = all_urls[3] if len(all_urls) > 3 else ""
+
+            return (images_tensor, url_1, url_2, url_3, url_4, console_log)
 
         finally:
             await client.close()
@@ -982,10 +1053,11 @@ class FireflyGenerativeExpandNodeV2:
     - Cleaner code structure
     - Better batch processing
     - Enhanced error handling
+    - Dual input support for images
     """
 
-    RETURN_TYPES = ("IMAGE", "STRING")
-    RETURN_NAMES = ("image", "debug_log")
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("image", "image_url_1", "image_url_2", "image_url_3", "image_url_4", "debug_log")
     FUNCTION = "api_call"
     API_NODE = True
     CATEGORY = "api node/firefly v2"
@@ -993,8 +1065,23 @@ class FireflyGenerativeExpandNodeV2:
     @classmethod
     def INPUT_TYPES(cls):
         return {
+            "optional": {
+                "image": (
+                    "IMAGE",
+                    {
+                        "tooltip": "Image to expand (auto-uploads to Firefly storage).",
+                    },
+                ),
+                "image_reference": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "forceInput": True,
+                        "tooltip": "Image upload ID or presigned URL from another node.",
+                    },
+                ),
+            },
             "required": {
-                "image": ("IMAGE",),
                 "output_width": (
                     "INT",
                     {
@@ -1056,16 +1143,23 @@ class FireflyGenerativeExpandNodeV2:
 
     async def api_call(
         self,
-        image: torch.Tensor,
         output_width: int,
         output_height: int,
         num_variations: int,
         seed: str = "",
+        image: Optional[torch.Tensor] = None,
+        image_reference: str = "",
         prompt: str = "",
         negative_prompt: str = "",
         unique_id: Optional[str] = None,
     ):
         """Expand image using Firefly API."""
+        # Validate inputs
+        if image is None and not image_reference:
+            raise ValueError("Must provide either 'image' or 'image_reference'")
+        if image is not None and image_reference:
+            raise ValueError("Cannot provide both 'image' and 'image_reference' - choose only one")
+
         # Parse seeds
         seeds_list = None
         if seed and seed.strip():
@@ -1078,17 +1172,27 @@ class FireflyGenerativeExpandNodeV2:
 
         try:
             images = []
-            total = image.shape[0]
+            all_urls = []
+            total = image.shape[0] if image is not None else 1
             pbar = ProgressBar(total)
 
             for i in range(total):
-                # Upload image
-                image_upload_id = await upload_image_to_firefly(image=image[i])
+                # Determine image source
+                if image is not None:
+                    # Upload to Firefly storage and get upload ID
+                    upload_id = await upload_image_to_firefly(image=image[i])
+                    image_source = FireflyPublicBinaryInput(uploadId=upload_id)
+                else:
+                    # Use provided upload ID or presigned URL
+                    if image_reference.lower().startswith("http"):
+                        image_source = FireflyPublicBinaryInput(url=image_reference)
+                    else:
+                        image_source = FireflyPublicBinaryInput(uploadId=image_reference)
 
                 # Prepare request
                 request = ExpandImageRequest(
                     image=FireflyInputImage(
-                        source=FireflyPublicBinaryInput(uploadId=image_upload_id)
+                        source=image_source
                     ),
                     size=FireflySize(width=output_width, height=output_height),
                     prompt=prompt if prompt else None,
@@ -1139,10 +1243,12 @@ class FireflyGenerativeExpandNodeV2:
                 if not result.outputs:
                     raise Exception("No outputs returned from Firefly API")
 
-                output_bytesio, _ = await download_firefly_outputs(
+                output_bytesio, presigned_urls = await download_firefly_outputs(
                     result.outputs,
                     unique_id=unique_id,
                 )
+
+                all_urls.extend(presigned_urls)
 
                 # Convert to tensors
                 batch_images = []
@@ -1158,7 +1264,13 @@ class FireflyGenerativeExpandNodeV2:
             images_tensor = torch.cat(images, dim=0)
             console_log = f"Generative Expand completed: {total} image(s) processed"
 
-            return (images_tensor, console_log)
+            # Split URLs into individual outputs (up to 4)
+            url_1 = all_urls[0] if len(all_urls) > 0 else ""
+            url_2 = all_urls[1] if len(all_urls) > 1 else ""
+            url_3 = all_urls[2] if len(all_urls) > 2 else ""
+            url_4 = all_urls[3] if len(all_urls) > 3 else ""
+
+            return (images_tensor, url_1, url_2, url_3, url_4, console_log)
 
         finally:
             await client.close()
@@ -1172,10 +1284,11 @@ class FireflyGenerateSimilarNodeV2:
     - Cleaner code structure
     - Better batch processing
     - Enhanced error handling
+    - Dual input support for images
     """
 
-    RETURN_TYPES = ("IMAGE", "STRING")
-    RETURN_NAMES = ("image", "debug_log")
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("image", "image_url_1", "image_url_2", "image_url_3", "image_url_4", "debug_log")
     FUNCTION = "api_call"
     API_NODE = True
     CATEGORY = "api node/firefly v2"
@@ -1183,8 +1296,23 @@ class FireflyGenerateSimilarNodeV2:
     @classmethod
     def INPUT_TYPES(cls):
         return {
+            "optional": {
+                "image": (
+                    "IMAGE",
+                    {
+                        "tooltip": "Reference image (auto-uploads to Firefly storage).",
+                    },
+                ),
+                "image_reference": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "forceInput": True,
+                        "tooltip": "Image upload ID or presigned URL from another node.",
+                    },
+                ),
+            },
             "required": {
-                "image": ("IMAGE",),
                 "num_variations": (
                     "INT",
                     {
@@ -1228,14 +1356,21 @@ class FireflyGenerateSimilarNodeV2:
 
     async def api_call(
         self,
-        image: torch.Tensor,
         num_variations: int,
         seed: str = "",
+        image: Optional[torch.Tensor] = None,
+        image_reference: str = "",
         prompt: str = "",
         negative_prompt: str = "",
         unique_id: Optional[str] = None,
     ):
         """Generate similar images using Firefly API."""
+        # Validate inputs
+        if image is None and not image_reference:
+            raise ValueError("Must provide either 'image' or 'image_reference'")
+        if image is not None and image_reference:
+            raise ValueError("Cannot provide both 'image' and 'image_reference' - choose only one")
+
         # Parse seeds
         seeds_list = None
         if seed and seed.strip():
@@ -1248,17 +1383,27 @@ class FireflyGenerateSimilarNodeV2:
 
         try:
             images = []
-            total = image.shape[0]
+            all_urls = []
+            total = image.shape[0] if image is not None else 1
             pbar = ProgressBar(total)
 
             for i in range(total):
-                # Upload image
-                image_upload_id = await upload_image_to_firefly(image=image[i])
+                # Determine image source
+                if image is not None:
+                    # Upload to Firefly storage and get upload ID
+                    upload_id = await upload_image_to_firefly(image=image[i])
+                    image_source = FireflyPublicBinaryInput(uploadId=upload_id)
+                else:
+                    # Use provided upload ID or presigned URL
+                    if image_reference.lower().startswith("http"):
+                        image_source = FireflyPublicBinaryInput(url=image_reference)
+                    else:
+                        image_source = FireflyPublicBinaryInput(uploadId=image_reference)
 
                 # Prepare request
                 request = GenerateSimilarImagesRequest(
                     image=FireflyInputImage(
-                        source=FireflyPublicBinaryInput(uploadId=image_upload_id)
+                        source=image_source
                     ),
                     prompt=prompt if prompt else None,
                     negativePrompt=negative_prompt if negative_prompt else None,
@@ -1308,10 +1453,12 @@ class FireflyGenerateSimilarNodeV2:
                 if not result.outputs:
                     raise Exception("No outputs returned from Firefly API")
 
-                output_bytesio, _ = await download_firefly_outputs(
+                output_bytesio, presigned_urls = await download_firefly_outputs(
                     result.outputs,
                     unique_id=unique_id,
                 )
+
+                all_urls.extend(presigned_urls)
 
                 # Convert to tensors
                 batch_images = []
@@ -1327,7 +1474,13 @@ class FireflyGenerateSimilarNodeV2:
             images_tensor = torch.cat(images, dim=0)
             console_log = f"Generate Similar completed: {total} image(s) processed"
 
-            return (images_tensor, console_log)
+            # Split URLs into individual outputs (up to 4)
+            url_1 = all_urls[0] if len(all_urls) > 0 else ""
+            url_2 = all_urls[1] if len(all_urls) > 1 else ""
+            url_3 = all_urls[2] if len(all_urls) > 2 else ""
+            url_4 = all_urls[3] if len(all_urls) > 3 else ""
+
+            return (images_tensor, url_1, url_2, url_3, url_4, console_log)
 
         finally:
             await client.close()
@@ -1341,10 +1494,11 @@ class FireflyGenerateObjectCompositeNodeV2:
     - Cleaner code structure
     - Better batch processing
     - Enhanced error handling
+    - Dual input support for images and masks
     """
 
-    RETURN_TYPES = ("IMAGE", "STRING")
-    RETURN_NAMES = ("image", "debug_log")
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("image", "image_url_1", "image_url_2", "image_url_3", "image_url_4", "debug_log")
     FUNCTION = "api_call"
     API_NODE = True
     CATEGORY = "api node/firefly v2"
@@ -1352,9 +1506,37 @@ class FireflyGenerateObjectCompositeNodeV2:
     @classmethod
     def INPUT_TYPES(cls):
         return {
+            "optional": {
+                "image": (
+                    "IMAGE",
+                    {
+                        "tooltip": "Background image (auto-uploads to Firefly storage).",
+                    },
+                ),
+                "image_reference": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "forceInput": True,
+                        "tooltip": "Image upload ID or presigned URL from another node.",
+                    },
+                ),
+                "mask": (
+                    "MASK",
+                    {
+                        "tooltip": "Mask for object placement (auto-uploads to Firefly storage).",
+                    },
+                ),
+                "mask_reference": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "forceInput": True,
+                        "tooltip": "Mask upload ID or presigned URL from another node.",
+                    },
+                ),
+            },
             "required": {
-                "image": ("IMAGE",),
-                "mask": ("MASK",),
                 "prompt": (
                     "STRING",
                     {
@@ -1397,16 +1579,28 @@ class FireflyGenerateObjectCompositeNodeV2:
 
     async def api_call(
         self,
-        image: torch.Tensor,
-        mask: torch.Tensor,
         prompt: str,
         num_variations: int,
         seed: str = "",
+        image: Optional[torch.Tensor] = None,
+        image_reference: str = "",
+        mask: Optional[torch.Tensor] = None,
+        mask_reference: str = "",
         negative_prompt: str = "",
         unique_id: Optional[str] = None,
     ):
         """Generate object composite using Firefly API."""
         validate_string(prompt, strip_whitespace=False, max_length=1024)
+
+        # Validate inputs
+        if image is None and not image_reference:
+            raise ValueError("Must provide either 'image' or 'image_reference'")
+        if image is not None and image_reference:
+            raise ValueError("Cannot provide both 'image' and 'image_reference' - choose only one")
+        if mask is None and not mask_reference:
+            raise ValueError("Must provide either 'mask' or 'mask_reference'")
+        if mask is not None and mask_reference:
+            raise ValueError("Cannot provide both 'mask' and 'mask_reference' - choose only one")
 
         # Parse seeds
         seeds_list = None
@@ -1419,25 +1613,47 @@ class FireflyGenerateObjectCompositeNodeV2:
         client = await create_adobe_client()
 
         try:
-            # Prepare mask
-            mask = resize_mask_to_image(mask, image, allow_gradient=False, add_channel_dim=True)
+            # Prepare mask if provided as tensor
+            if mask is not None and image is not None:
+                mask = resize_mask_to_image(mask, image, allow_gradient=False, add_channel_dim=True)
 
             images = []
-            total = image.shape[0]
+            all_urls = []
+            total = image.shape[0] if image is not None else 1
             pbar = ProgressBar(total)
 
             for i in range(total):
-                # Upload image and mask
-                image_upload_id = await upload_image_to_firefly(image=image[i])
-                mask_upload_id = await upload_image_to_firefly(image=mask[i:i+1])
+                # Determine image source
+                if image is not None:
+                    # Upload to Firefly storage and get upload ID
+                    upload_id = await upload_image_to_firefly(image=image[i])
+                    image_source = FireflyPublicBinaryInput(uploadId=upload_id)
+                else:
+                    # Use provided upload ID or presigned URL
+                    if image_reference.lower().startswith("http"):
+                        image_source = FireflyPublicBinaryInput(url=image_reference)
+                    else:
+                        image_source = FireflyPublicBinaryInput(uploadId=image_reference)
+
+                # Determine mask source
+                if mask is not None:
+                    # Upload to Firefly storage and get upload ID
+                    mask_upload_id = await upload_image_to_firefly(image=mask[i:i+1])
+                    mask_source = FireflyPublicBinaryInput(uploadId=mask_upload_id)
+                else:
+                    # Use provided upload ID or presigned URL
+                    if mask_reference.lower().startswith("http"):
+                        mask_source = FireflyPublicBinaryInput(url=mask_reference)
+                    else:
+                        mask_source = FireflyPublicBinaryInput(uploadId=mask_reference)
 
                 # Prepare request
                 request = GenerateObjectCompositeRequest(
                     image=FireflyInputImage(
-                        source=FireflyPublicBinaryInput(uploadId=image_upload_id)
+                        source=image_source
                     ),
                     mask=FireflyInputMask(
-                        source=FireflyPublicBinaryInput(uploadId=mask_upload_id)
+                        source=mask_source
                     ),
                     prompt=prompt,
                     negativePrompt=negative_prompt if negative_prompt else None,
@@ -1487,10 +1703,12 @@ class FireflyGenerateObjectCompositeNodeV2:
                 if not result.outputs:
                     raise Exception("No outputs returned from Firefly API")
 
-                output_bytesio, _ = await download_firefly_outputs(
+                output_bytesio, presigned_urls = await download_firefly_outputs(
                     result.outputs,
                     unique_id=unique_id,
                 )
+
+                all_urls.extend(presigned_urls)
 
                 # Convert to tensors
                 batch_images = []
@@ -1506,7 +1724,13 @@ class FireflyGenerateObjectCompositeNodeV2:
             images_tensor = torch.cat(images, dim=0)
             console_log = f"Object Composite completed: {total} image(s) processed"
 
-            return (images_tensor, console_log)
+            # Split URLs into individual outputs (up to 4)
+            url_1 = all_urls[0] if len(all_urls) > 0 else ""
+            url_2 = all_urls[1] if len(all_urls) > 1 else ""
+            url_3 = all_urls[2] if len(all_urls) > 2 else ""
+            url_4 = all_urls[3] if len(all_urls) > 3 else ""
+
+            return (images_tensor, url_1, url_2, url_3, url_4, console_log)
 
         finally:
             await client.close()
