@@ -266,7 +266,7 @@ class FireflyTextToImageNodeV2:
     """
 
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING", "STRING", "STRING")
-    RETURN_NAMES = ("image", "url_1", "url_2", "url_3", "url_4", "debug_log")
+    RETURN_NAMES = ("image", "image_url_1", "image_url_2", "image_url_3", "image_url_4", "debug_log")
     FUNCTION = "api_call"
     API_NODE = True
     CATEGORY = "api node/firefly v2"
@@ -275,7 +275,7 @@ class FireflyTextToImageNodeV2:
     def INPUT_TYPES(cls):
         return {
             "optional": {
-                # Primary text inputs
+                # Text inputs (at top)
                 "prompt": (
                     "STRING",
                     {
@@ -300,6 +300,118 @@ class FireflyTextToImageNodeV2:
                         "tooltip": "Text to append to the main prompt.",
                     },
                 ),
+
+                # Seed (comma-separated for multiple values)
+                "seed": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "tooltip": "Seed(s) for reproducibility. Can be single (e.g. '123') or comma-separated (e.g. '1,2,3,4') for multiple variations.",
+                    },
+                ),
+
+                # Primary controls
+                "model_version": (
+                    ["image3", "image3_custom", "image4_standard", "image4_ultra", "image4_custom"],
+                    {
+                        "default": "image4_standard",
+                        "tooltip": "Firefly model version.",
+                    },
+                ),
+                "size": (
+                    FIREFLY_ASPECT_RATIOS,
+                    {
+                        "default": "2048x2048 (1:1)",
+                        "tooltip": "Image size and aspect ratio.",
+                    },
+                ),
+                "num_variations": (
+                    "INT",
+                    {
+                        "min": 1,
+                        "max": 4,
+                        "default": 1,
+                        "tooltip": "Number of image variations to generate.",
+                    },
+                ),
+                "content_class": (
+                    ["photo", "art"],
+                    {
+                        "default": "photo",
+                        "tooltip": "Content class: 'photo' for photorealistic, 'art' for artistic style.",
+                    },
+                ),
+                "style_preset": (
+                    FIREFLY_STYLE_PRESETS,
+                    {
+                        "default": "none",
+                        "tooltip": "Style preset to apply to generation.",
+                    },
+                ),
+                "upsampler_type": (
+                    ["default", "low_creativity"],
+                    {
+                        "default": "default",
+                        "tooltip": "Upsampler type (only for image4_custom model).",
+                    },
+                ),
+                "visual_intensity": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "tooltip": "Visual intensity of the generation (2-10). Leave empty for default.",
+                    },
+                ),
+
+                # Reference inputs
+                "structure_reference": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "forceInput": True,
+                        "tooltip": "Structure reference image upload ID or presigned URL from another node.",
+                    },
+                ),
+                "style_reference": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "forceInput": True,
+                        "tooltip": "Style reference image upload ID or presigned URL from another node.",
+                    },
+                ),
+
+                # Image uploads
+                "structure_image": (
+                    "IMAGE",
+                    {
+                        "tooltip": "Structure reference image (auto-uploads to Firefly storage).",
+                    },
+                ),
+                "style_image": (
+                    "IMAGE",
+                    {
+                        "tooltip": "Style reference image (auto-uploads to Firefly storage).",
+                    },
+                ),
+
+                # Strength controls
+                "structure_strength": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "tooltip": "Structure reference strength (0-100). Leave empty for default.",
+                    },
+                ),
+                "style_strength": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "tooltip": "Style reference strength (0-100). Leave empty for default.",
+                    },
+                ),
+
+                # Advanced options
                 "custom_model_id": (
                     "STRING",
                     {
@@ -312,100 +424,6 @@ class FireflyTextToImageNodeV2:
                     {
                         "default": "",
                         "tooltip": "Language/locale code (e.g., 'en-US', 'ja-JP').",
-                    },
-                ),
-
-                # Model configuration
-                "model_version": (
-                    ["image3", "image3_custom", "image4_standard", "image4_ultra", "image4_custom"],
-                    {
-                        "default": "image4_standard",
-                        "tooltip": "Firefly model version to use.",
-                    },
-                ),
-                "content_class": (
-                    ["photo", "art"],
-                    {
-                        "default": "photo",
-                        "tooltip": "Content class: 'photo' for photorealistic, 'art' for artistic.",
-                    },
-                ),
-
-                # Image settings
-                "size": (
-                    FIREFLY_ASPECT_RATIOS,
-                    {
-                        "default": "2048x2048 (1:1)",
-                        "tooltip": "Image size and aspect ratio.",
-                    },
-                ),
-                "num_variations": (
-                    "INT",
-                    {
-                        "default": 1,
-                        "min": 1,
-                        "max": 4,
-                        "tooltip": "Number of image variations to generate.",
-                    },
-                ),
-                "seed": (
-                    "STRING",
-                    {
-                        "default": "",
-                        "tooltip": "Seed(s) for reproducibility. Leave empty for random, or provide single seed (e.g. '12345') or multiple comma-separated seeds (e.g. '1,2,3,4').",
-                    },
-                ),
-                "visual_intensity": (
-                    "STRING",
-                    {
-                        "default": "",
-                        "tooltip": "Visual intensity of generation (2-10). Leave empty for default.",
-                    },
-                ),
-
-                # Style configuration
-                "style_preset": (
-                    FIREFLY_STYLE_PRESETS,
-                    {
-                        "default": "none",
-                        "tooltip": "Style preset to apply.",
-                    },
-                ),
-                "style_upload_id": (
-                    "STRING",
-                    {
-                        "default": "",
-                        "tooltip": "Style reference image upload ID or presigned URL.",
-                    },
-                ),
-                "style_strength": (
-                    "STRING",
-                    {
-                        "default": "",
-                        "tooltip": "Style reference strength (0-100). Leave empty for default.",
-                    },
-                ),
-
-                # Structure configuration
-                "structure_upload_id": (
-                    "STRING",
-                    {
-                        "default": "",
-                        "tooltip": "Structure reference image upload ID or presigned URL.",
-                    },
-                ),
-                "structure_strength": (
-                    "STRING",
-                    {
-                        "default": "",
-                        "tooltip": "Structure reference strength (0-100). Leave empty for default.",
-                    },
-                ),
-                "upsampler_type": (
-                    ["default", "low_creativity"],
-                    {
-                        "default": "default",
-                        "tooltip": "Upsampler type (only for image4_custom model).",
                     },
                 ),
             },
@@ -428,9 +446,11 @@ class FireflyTextToImageNodeV2:
         seed: str = "",
         visual_intensity: str = "",
         style_preset: str = "none",
-        style_upload_id: str = "",
+        style_image: Optional[torch.Tensor] = None,
+        style_reference: str = "",
         style_strength: str = "",
-        structure_upload_id: str = "",
+        structure_image: Optional[torch.Tensor] = None,
+        structure_reference: str = "",
         structure_strength: str = "",
         upsampler_type: str = "default",
         unique_id: Optional[str] = None,
@@ -468,21 +488,48 @@ class FireflyTextToImageNodeV2:
             except ValueError:
                 raise ValueError(f"Invalid visual_intensity: '{visual_intensity}'. Must be an integer between 2-10.")
 
+        # Validate style inputs (allow at most one)
+        style_inputs_provided = sum([
+            style_image is not None,
+            bool(style_reference),
+        ])
+        if style_inputs_provided > 1:
+            raise ValueError("Cannot provide multiple style inputs - choose only one: 'style_image' or 'style_reference'")
+
+        # Validate structure inputs (allow at most one)
+        structure_inputs_provided = sum([
+            structure_image is not None,
+            bool(structure_reference),
+        ])
+        if structure_inputs_provided > 1:
+            raise ValueError("Cannot provide multiple structure inputs - choose only one: 'structure_image' or 'structure_reference'")
+
         # Create Adobe API client
         client = await create_adobe_client(model_version=model_version)
 
         try:
             # Build style configuration
             style_config = None
-            if style_upload_id:
-                if style_upload_id.lower().startswith("http"):
+            if style_image is not None or style_reference:
+                # Determine style image source
+                if style_image is not None:
+                    # Upload to Firefly storage and get upload ID
+                    upload_id = await upload_image_to_firefly(
+                        image=style_image[0] if len(style_image.shape) == 4 else style_image,
+                    )
                     style_ref = FireflyStyleImageReferenceV3(
-                        source=FireflyPublicBinaryInput(url=style_upload_id)
+                        source=FireflyPublicBinaryInput(uploadId=upload_id)
                     )
                 else:
-                    style_ref = FireflyStyleImageReferenceV3(
-                        source=FireflyPublicBinaryInput(uploadId=style_upload_id)
-                    )
+                    # Use provided upload ID or presigned URL from node connection
+                    if style_reference.lower().startswith("http"):
+                        style_ref = FireflyStyleImageReferenceV3(
+                            source=FireflyPublicBinaryInput(url=style_reference)
+                        )
+                    else:
+                        style_ref = FireflyStyleImageReferenceV3(
+                            source=FireflyPublicBinaryInput(uploadId=style_reference)
+                        )
                 presets_list = [style_preset] if style_preset and style_preset != "none" else None
 
                 # Parse style_strength
@@ -501,15 +548,26 @@ class FireflyTextToImageNodeV2:
 
             # Build structure configuration
             structure_config = None
-            if structure_upload_id:
-                if structure_upload_id.lower().startswith("http"):
+            if structure_image is not None or structure_reference:
+                # Determine structure image source
+                if structure_image is not None:
+                    # Upload to Firefly storage and get upload ID
+                    upload_id = await upload_image_to_firefly(
+                        image=structure_image[0] if len(structure_image.shape) == 4 else structure_image,
+                    )
                     structure_ref = FireflyStructureImageReferenceV3(
-                        source=FireflyPublicBinaryInput(url=structure_upload_id)
+                        source=FireflyPublicBinaryInput(uploadId=upload_id)
                     )
                 else:
-                    structure_ref = FireflyStructureImageReferenceV3(
-                        source=FireflyPublicBinaryInput(uploadId=structure_upload_id)
-                    )
+                    # Use provided upload ID or presigned URL from node connection
+                    if structure_reference.lower().startswith("http"):
+                        structure_ref = FireflyStructureImageReferenceV3(
+                            source=FireflyPublicBinaryInput(url=structure_reference)
+                        )
+                    else:
+                        structure_ref = FireflyStructureImageReferenceV3(
+                            source=FireflyPublicBinaryInput(uploadId=structure_reference)
+                        )
 
                 # Parse structure_strength
                 structure_strength_int = None
@@ -555,11 +613,13 @@ class FireflyTextToImageNodeV2:
                 custom_model_id=custom_model_id,
                 prompt_biasing_locale=prompt_biasing_locale,
                 style_config=style_config,
-                style_upload_id=style_upload_id,
+                style_image=style_image,
+                style_reference=style_reference,
                 style_strength=style_strength,
                 style_preset=style_preset,
                 structure_config=structure_config,
-                structure_upload_id=structure_upload_id,
+                structure_image=structure_image,
+                structure_reference=structure_reference,
                 structure_strength=structure_strength,
                 upsampler_type=upsampler_type,
             )
@@ -676,11 +736,13 @@ class FireflyTextToImageNodeV2:
         custom_model_id: str,
         prompt_biasing_locale: str,
         style_config: Any,
-        style_upload_id: str,
+        style_image: Optional[torch.Tensor],
+        style_reference: str,
         style_strength: str,
         style_preset: str,
         structure_config: Any,
-        structure_upload_id: str,
+        structure_image: Optional[torch.Tensor],
+        structure_reference: str,
         structure_strength: str,
         upsampler_type: str,
     ) -> str:
@@ -710,7 +772,10 @@ class FireflyTextToImageNodeV2:
 
         if style_config:
             log += f"  style:\n"
-            log += f"    uploadId: {style_upload_id}\n"
+            if style_image is not None:
+                log += f"    uploadId: [UPLOADED IMAGE]\n"
+            else:
+                log += f"    uploadId: {style_reference}\n"
             if style_strength and style_strength.strip():
                 log += f"    strength: {style_strength}\n"
             if style_preset and style_preset != "none":
@@ -718,7 +783,10 @@ class FireflyTextToImageNodeV2:
 
         if structure_config:
             log += f"  structure:\n"
-            log += f"    uploadId: {structure_upload_id}\n"
+            if structure_image is not None:
+                log += f"    uploadId: [UPLOADED IMAGE]\n"
+            else:
+                log += f"    uploadId: {structure_reference}\n"
             if structure_strength and structure_strength.strip():
                 log += f"    strength: {structure_strength}\n"
 
