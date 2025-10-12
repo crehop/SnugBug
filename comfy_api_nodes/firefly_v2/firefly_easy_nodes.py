@@ -190,26 +190,173 @@ FIREFLY_ASPECT_RATIOS = [
     "3456x2688 (16:9)",
 ]
 
-FIREFLY_STYLE_PRESETS = [
-    "none",
-    "art",
-    "photo",
-    "graphic",
-    "bw",
-    "color_pop",
-    "warm_tone",
-    "cool_tone",
-    "golden_hour",
-    "pastel",
-    "cyberpunk",
-    "steampunk",
-    "anime",
-    "concept_art",
-    "cinematic",
-    "dramatic",
-    "minimalist",
-    "vintage",
-]
+# Mapping of human-readable names to Firefly API enum values
+FIREFLY_STYLE_PRESET_MAP = {
+    "None": "none",
+    # Colors & Tones
+    "Wireframe": "wireframe",
+    "Vector look": "vector_look",
+    "Black and white": "bw",
+    "Cool tone": "cool_colors",
+    "Golden": "golden",
+    "Monochromatic": "monochromatic",
+    "Muted color": "muted_color",
+    "Pastel color": "pastel_color",
+    "Toned image": "toned_image",
+    "Vibrant colors": "vibrant_colors",
+    "Warm tone": "warm_tone",
+    # Photography Styles
+    "Closeup": "closeup",
+    "Knolling": "knolling",
+    "Landscape photography": "landscape_photography",
+    "Macrophotography": "macrophotography",
+    "Photographed through window": "photographed_through_window",
+    "Shallow depth of field": "shallow_depth_of_field",
+    "Shot from above": "shot_from_above",
+    "Shot from below": "shot_from_below",
+    "Surface detail": "surface_detail",
+    "Wide angle": "wide_angle",
+    # Moods & Themes
+    "Beautiful": "beautiful",
+    "Bohemian": "bohemian",
+    "Chaotic": "chaotic",
+    "Dais": "dais",
+    "Divine": "divine",
+    "Eclectic": "eclectic",
+    "Futuristic": "futuristic",
+    "Kitschy": "kitschy",
+    "Nostalgic": "nostalgic",
+    "Simple": "simple",
+    # Effects
+    "Antique photo": "antique_photo",
+    "Bioluminescent": "bioluminescent",
+    "Bokeh effect": "bokeh",
+    "Color explosion": "color_explosion",
+    "Dark": "dark",
+    "Faded image": "faded_image",
+    "Fisheye": "fisheye",
+    "Gomori photography": "gomori_photography",
+    "Grainy film": "grainy_film",
+    "Iridescent": "iridescent",
+    "Isometric": "isometric",
+    "Misty": "misty",
+    "Neon": "neon",
+    "Otherworldly depiction": "otherworldly_depiction",
+    "Ultraviolet": "ultraviolet",
+    "Underwater": "underwater",
+    # Lighting
+    "Backlighting": "backlighting",
+    "Dramatic light": "dramatic_light",
+    "Golden hour": "golden_hour",
+    "Harsh light": "harsh_light",
+    "Long-time exposure": "long",
+    "Low lighting": "low_lighting",
+    "Multiexposure": "multiexposure",
+    "Studio light": "studio_light",
+    "Surreal lighting": "surreal_lighting",
+    # Materials & Textures
+    "3d patterns": "3d_patterns",
+    "Charcoal": "charcoal",
+    "Claymation": "claymation",
+    "Fabric": "fabric",
+    "Fur": "fur",
+    "Guilloche patterns": "guilloche_patterns",
+    "Layered paper": "layered_paper",
+    "Marble": "marble_sculpture",
+    "Metal": "made_of_metal",
+    "Origami": "origami",
+    "Paper mache": "paper_mache",
+    "Polka-dot pattern": "polka",
+    "Strange patterns": "strange_patterns",
+    "Wood carving": "wood_carving",
+    "Yarn": "yarn",
+    # Art Movements & Styles
+    "Art deco": "art_deco",
+    "Art nouveau": "art_nouveau",
+    "Baroque": "baroque",
+    "Bauhaus": "bauhaus",
+    "Constructivism": "constructivism",
+    "Cubism": "cubism",
+    "Cyberpunk": "cyberpunk",
+    "Fantasy": "fantasy",
+    "Fauvism": "fauvism",
+    "Film noir": "film_noir",
+    "Glitch art": "glitch_art",
+    "Impressionism": "impressionism",
+    "Industrial": "industrialism",
+    "Maximalism": "maximalism",
+    "Minimalism": "minimalism",
+    "Modern art": "modern_art",
+    "Modernism": "modernism",
+    "Neo-expressionism": "neo",
+    "Pointillism": "pointillism",
+    "Psychedelic": "psychedelic",
+    "Science fiction": "science_fiction",
+    "Steampunk": "steampunk",
+    "Surrealism": "surrealism",
+    "Synthetism": "synthetism",
+    "Synthwave": "synthwave",
+    "Vaporwave": "vaporwave",
+    # Art Techniques
+    "Acrylic paint": "acrylic_paint",
+    "Bold lines": "bold_lines",
+    "Chiaroscuro": "chiaroscuro",
+    "Color shift art": "color_shift_art",
+    "Daguerreotype": "daguerreotype",
+    "Digital fractal": "digital_fractal",
+    "Doodle drawing": "doodle_drawing",
+    "Double exposure": "double_exposure_portrait",
+    "Fresco": "fresco",
+    "Geometric pen": "geometric_pen",
+    "Halftone": "halftone",
+    "Ink": "ink",
+    "Light painting": "light_painting",
+    "Line drawing": "line_drawing",
+    "Linocut": "linocut",
+    "Oil paint": "oil_paint",
+    "Paint Spattering": "paint_spattering",
+    "Painting": "painting",
+    "Palette knife": "palette_knife",
+    "Photo manipulation": "photo_manipulation",
+    "Scribble texture": "scribble_texture",
+    "Sketch": "sketch",
+    "Splattering": "splattering",
+    "Stippling": "stippling_drawing",
+    "Watercolor": "watercolor",
+    # Digital & Graphic Styles
+    "3d": "3d",
+    "Anime": "anime",
+    "Cartoon": "cartoon",
+    "Cinematic": "cinematic",
+    "Comic book": "comic_book",
+    "Concept art": "concept_art",
+    "Cyber matrix": "cyber_matrix",
+    "Digital art": "digital_art",
+    "Flat design": "flat_design",
+    "Geometric": "geometric",
+    "Glassmorphism": "glassmorphism",
+    "Glitch graphic": "glitch_graphic",
+    "Graffiti": "graffiti",
+    "Hyper realistic": "hyper_realistic",
+    "Interior design": "interior_design",
+    "Line gradient": "line_gradient",
+    "Low poly": "low_poly",
+    "Newspaper collage": "newspaper_collage",
+    "Optical illusion": "optical_illusion",
+    "Pattern pixel": "pattern_pixel",
+    "Pixel art": "pixel_art",
+    "Pop art": "pop_art",
+    "Product photo": "product_photo",
+    "Psychedelic background": "psychedelic_background",
+    "Psychedelic wonderland": "psychedelic_wonderland",
+    "Scandinavian": "scandinavian",
+    "Splash images": "splash_images",
+    "Stamp": "stamp",
+    "Trompe l'oeil": "trompe_loeil",
+}
+
+# List of human-readable names for the dropdown
+FIREFLY_STYLE_PRESETS = list(FIREFLY_STYLE_PRESET_MAP.keys())
 
 
 # ============================================================================
@@ -344,7 +491,7 @@ class FireflyTextToImageNodeV2:
                 "style_preset": (
                     FIREFLY_STYLE_PRESETS,
                     {
-                        "default": "none",
+                        "default": "None",
                         "tooltip": "Style preset to apply to generation.",
                     },
                 ),
@@ -445,7 +592,7 @@ class FireflyTextToImageNodeV2:
         num_variations: int = 1,
         seed: str = "",
         visual_intensity: str = "",
-        style_preset: str = "none",
+        style_preset: str = "None",
         style_image: Optional[torch.Tensor] = None,
         style_reference: str = "",
         style_strength: str = "",
@@ -456,6 +603,9 @@ class FireflyTextToImageNodeV2:
         unique_id: Optional[str] = None,
     ):
         """Generate images using Adobe Firefly API."""
+
+        # Convert human-readable style preset to API enum value
+        style_preset_enum = FIREFLY_STYLE_PRESET_MAP.get(style_preset, "none")
 
         # Concatenate prompt with suffix if provided
         full_prompt = (prompt + " " + prompt_suffix).strip() if prompt_suffix else prompt
@@ -512,7 +662,7 @@ class FireflyTextToImageNodeV2:
             style_config = None
 
             # Check if any style parameters are provided
-            has_style_preset = style_preset and style_preset != "none"
+            has_style_preset = style_preset_enum and style_preset_enum != "none"
             has_style_image_or_ref = style_image is not None or style_reference
             has_style_strength = style_strength and style_strength.strip()
 
@@ -544,7 +694,7 @@ class FireflyTextToImageNodeV2:
 
                 # Add presets if provided
                 if has_style_preset:
-                    style_kwargs["presets"] = [style_preset]
+                    style_kwargs["presets"] = [style_preset_enum]
 
                 # Add strength if provided
                 if has_style_strength:
