@@ -532,11 +532,16 @@ class FireflyTextToImageNode:
                 presets_list = [style_preset] if style_preset and style_preset != "none" else None
                 # Convert strength to int if provided, otherwise use default (50)
                 strength_value = int(style_strength) if style_strength else 50
-                style_config = FireflyStyles(
-                    imageReference=style_ref,
-                    strength=strength_value,
-                    presets=presets_list,
-                )
+
+                # Build FireflyStyles kwargs, omitting presets if None
+                style_kwargs = {
+                    "imageReference": style_ref,
+                    "strength": strength_value,
+                }
+                if presets_list is not None:
+                    style_kwargs["presets"] = presets_list
+
+                style_config = FireflyStyles(**style_kwargs)
 
             # Build structure configuration if structure reference is provided
             structure_config = None
@@ -792,8 +797,8 @@ class FireflyGenerativeFillNode:
     Provide either images (auto-uploads to Firefly storage) OR upload IDs/presigned URLs.
     """
 
-    RETURN_TYPES = (IO.IMAGE, IO.STRING)
-    RETURN_NAMES = ("image", "debug_log")
+    RETURN_TYPES = (IO.IMAGE, IO.STRING, IO.STRING, IO.STRING, IO.STRING, IO.STRING)
+    RETURN_NAMES = ("image", "image_url_1", "image_url_2", "image_url_3", "image_url_4", "debug_log")
     DESCRIPTION = cleandoc(__doc__ or "")
     FUNCTION = "api_call"
     API_NODE = True
@@ -891,15 +896,13 @@ class FireflyGenerativeFillNode:
         try:
             # Console logging
             console_log = ""
+            firefly_logs = []
 
             # Determine image source
             if image is not None:
                 # Upload to Firefly storage and get upload ID
                 upload_id, firefly_log = await upload_image_for_firefly_api(image[0] if len(image.shape) == 4 else image)
-                console_log += "=======================================================\n"
-                console_log += "Input Image\n"
-                console_log += firefly_log
-                console_log += "=======================================================\n\n"
+                firefly_logs.append(("Input Image", firefly_log))
                 image_source = FireflyPublicBinaryInput(uploadId=upload_id)
             else:
                 # Use provided upload ID or presigned URL
@@ -912,10 +915,7 @@ class FireflyGenerativeFillNode:
             if mask is not None:
                 # Upload to Firefly storage and get upload ID
                 upload_id, firefly_log = await upload_image_for_firefly_api(mask[0] if len(mask.shape) == 4 else mask)
-                console_log += "=======================================================\n"
-                console_log += "Input Mask\n"
-                console_log += firefly_log
-                console_log += "=======================================================\n\n"
+                firefly_logs.append(("Input Mask", firefly_log))
                 mask_source = FireflyPublicBinaryInput(uploadId=upload_id)
             else:
                 # Use provided upload ID or presigned URL
@@ -938,6 +938,49 @@ class FireflyGenerativeFillNode:
                 seeds=[seed],
             )
 
+            # Build request body dict for logging
+            request_body_dict = {
+                "numVariations": num_variations,
+                "seeds": [seed],
+            }
+            if image is not None:
+                request_body_dict["image"] = {"source": {"uploadId": "[UPLOADED]"}}
+            else:
+                if image_reference.lower().startswith("http"):
+                    request_body_dict["image"] = {"source": {"url": image_reference}}
+                else:
+                    request_body_dict["image"] = {"source": {"uploadId": image_reference}}
+            if mask is not None:
+                request_body_dict["mask"] = {"source": {"uploadId": "[UPLOADED]"}}
+            else:
+                if mask_reference.lower().startswith("http"):
+                    request_body_dict["mask"] = {"source": {"url": mask_reference}}
+                else:
+                    request_body_dict["mask"] = {"source": {"uploadId": mask_reference}}
+            if prompt:
+                request_body_dict["prompt"] = prompt
+            if negative_prompt:
+                request_body_dict["negativePrompt"] = negative_prompt
+
+            # Add Firefly upload logs if any
+            if firefly_logs:
+                console_log += "=======================================================\n"
+                for label, log in firefly_logs:
+                    console_log += f"{label}\n"
+                    console_log += log
+                console_log += "=======================================================\n\n"
+
+            console_log += "=======================================================\n"
+            console_log += "POST /v3/images/fill-async\n"
+            console_log += "-------------------------------------------------------\n"
+            console_log += f"Request Headers:\n"
+            console_log += f"  x-model-version: image3\n"
+            console_log += f"  Authorization: Bearer [REDACTED]\n"
+            console_log += f"  Content-Type: application/json\n"
+            console_log += f"\nRequest Body:\n"
+            import json
+            console_log += json.dumps(request_body_dict, indent=2) + "\n"
+
             # Submit async job
             submit_endpoint = ApiEndpoint(
                 path="/v3/images/fill-async",
@@ -954,7 +997,23 @@ class FireflyGenerativeFillNode:
 
             submit_response: AsyncAcceptResponse = await submit_op.execute(client=client)
 
+            # Log response
+            response_body_dict = {
+                "jobId": submit_response.jobId,
+            }
+            console_log += f"\nResponse Status: 202 Accepted\n"
+            console_log += f"Response Headers:\n"
+            console_log += f"  Content-Type: application/json\n"
+            console_log += f"\nResponse Body:\n"
+            console_log += json.dumps(response_body_dict, indent=2) + "\n"
+            console_log += "=======================================================\n"
+
             # Poll for completion
+            console_log += f"\n=======================================================\n"
+            console_log += f"GET /v3/status/{submit_response.jobId}\n"
+            console_log += f"-------------------------------------------------------\n"
+            console_log += f"Polling for job completion...\n"
+
             poll_endpoint = ApiEndpoint(
                 path=f"/v3/status/{submit_response.jobId}",
                 method=HttpMethod.GET,
@@ -976,14 +1035,46 @@ class FireflyGenerativeFillNode:
 
             result: AsyncTaskResponse = await poll_op.execute(client=client)
 
+            # Log polling response
+            poll_response_dict = {
+                "status": result.status,
+                "jobId": result.jobId,
+                "outputs": [{"image": {"url": "[PRESIGNED_URL]"}} for _ in (result.outputs or [])],
+            }
+            console_log += f"\nResponse Status: 200 OK\n"
+            console_log += f"Response Headers:\n"
+            console_log += f"  Content-Type: application/json\n"
+            console_log += f"\nResponse Body:\n"
+            console_log += json.dumps(poll_response_dict, indent=2) + "\n"
+            console_log += f"\nSummary: {len(result.outputs) if result.outputs else 0} image(s) generated\n"
+            console_log += "=======================================================\n"
+
             # Download outputs
             if not result.outputs:
+                console_log += f"\n=======================================================\n"
+                console_log += f"ERROR: No outputs in response\n"
+                console_log += f"  status: {result.status}\n"
+                console_log += "=======================================================\n"
                 raise Exception("No outputs returned from Firefly API")
+
+            console_log += f"\n=======================================================\n"
+            console_log += f"DOWNLOADING OUTPUTS\n"
+            console_log += f"-------------------------------------------------------\n"
+            console_log += f"Downloading {len(result.outputs)} image(s)...\n"
 
             output_bytesio, presigned_urls = await download_firefly_outputs(
                 result.outputs,
                 unique_id=unique_id,
             )
+
+            console_log += f"✓ Downloaded {len(output_bytesio)} image(s) successfully\n"
+            console_log += "=======================================================\n"
+
+            # Add presigned URLs to console log
+            console_log += f"\nPresigned URLs (valid for 1 hour):\n"
+            for i, url in enumerate(presigned_urls, 1):
+                console_log += f"  [{i}] {url}\n"
+            console_log += "=======================================================\n"
 
             # Convert to tensors
             images = []
@@ -994,8 +1085,14 @@ class FireflyGenerativeFillNode:
                 images.append(img)
 
             images_tensor = torch.cat(images, dim=0)
-            console_log = "Debug logging not yet implemented for this node"
-            return (images_tensor, console_log)
+
+            # Split URLs into individual outputs (up to 4)
+            url_1 = presigned_urls[0] if len(presigned_urls) > 0 else ""
+            url_2 = presigned_urls[1] if len(presigned_urls) > 1 else ""
+            url_3 = presigned_urls[2] if len(presigned_urls) > 2 else ""
+            url_4 = presigned_urls[3] if len(presigned_urls) > 3 else ""
+
+            return (images_tensor, url_1, url_2, url_3, url_4, console_log)
         finally:
             await client.close()
 
@@ -1217,8 +1314,8 @@ class FireflyGenerateSimilarNode:
     Provide either an image (auto-uploads to Firefly storage) OR an upload ID/presigned URL.
     """
 
-    RETURN_TYPES = (IO.IMAGE, IO.STRING)
-    RETURN_NAMES = ("image", "debug_log")
+    RETURN_TYPES = (IO.IMAGE, IO.STRING, IO.STRING, IO.STRING, IO.STRING, IO.STRING)
+    RETURN_NAMES = ("image", "image_url_1", "image_url_2", "image_url_3", "image_url_4", "debug_log")
     DESCRIPTION = cleandoc(__doc__ or "")
     FUNCTION = "api_call"
     API_NODE = True
@@ -1331,6 +1428,34 @@ class FireflyGenerateSimilarNode:
                 seeds=[seed],
             )
 
+            # Build request body dict for logging
+            request_body_dict = {
+                "numVariations": num_variations,
+                "seeds": [seed],
+            }
+            if image is not None:
+                request_body_dict["image"] = {"source": {"uploadId": "[UPLOADED]"}}
+            else:
+                if image_reference.lower().startswith("http"):
+                    request_body_dict["image"] = {"source": {"url": image_reference}}
+                else:
+                    request_body_dict["image"] = {"source": {"uploadId": image_reference}}
+            if prompt:
+                request_body_dict["prompt"] = prompt
+            if negative_prompt:
+                request_body_dict["negativePrompt"] = negative_prompt
+
+            console_log += "=======================================================\n"
+            console_log += "POST /v3/images/generate-similar-async\n"
+            console_log += "-------------------------------------------------------\n"
+            console_log += f"Request Headers:\n"
+            console_log += f"  x-model-version: image3\n"
+            console_log += f"  Authorization: Bearer [REDACTED]\n"
+            console_log += f"  Content-Type: application/json\n"
+            console_log += f"\nRequest Body:\n"
+            import json
+            console_log += json.dumps(request_body_dict, indent=2) + "\n"
+
             # Submit async job
             submit_endpoint = ApiEndpoint(
                 path="/v3/images/generate-similar-async",
@@ -1347,7 +1472,23 @@ class FireflyGenerateSimilarNode:
 
             submit_response: AsyncAcceptResponse = await submit_op.execute(client=client)
 
+            # Log response
+            response_body_dict = {
+                "jobId": submit_response.jobId,
+            }
+            console_log += f"\nResponse Status: 202 Accepted\n"
+            console_log += f"Response Headers:\n"
+            console_log += f"  Content-Type: application/json\n"
+            console_log += f"\nResponse Body:\n"
+            console_log += json.dumps(response_body_dict, indent=2) + "\n"
+            console_log += "=======================================================\n"
+
             # Poll for completion
+            console_log += f"\n=======================================================\n"
+            console_log += f"GET /v3/status/{submit_response.jobId}\n"
+            console_log += f"-------------------------------------------------------\n"
+            console_log += f"Polling for job completion...\n"
+
             poll_endpoint = ApiEndpoint(
                 path=f"/v3/status/{submit_response.jobId}",
                 method=HttpMethod.GET,
@@ -1369,14 +1510,46 @@ class FireflyGenerateSimilarNode:
 
             result: AsyncTaskResponse = await poll_op.execute(client=client)
 
+            # Log polling response
+            poll_response_dict = {
+                "status": result.status,
+                "jobId": result.jobId,
+                "outputs": [{"image": {"url": "[PRESIGNED_URL]"}} for _ in (result.outputs or [])],
+            }
+            console_log += f"\nResponse Status: 200 OK\n"
+            console_log += f"Response Headers:\n"
+            console_log += f"  Content-Type: application/json\n"
+            console_log += f"\nResponse Body:\n"
+            console_log += json.dumps(poll_response_dict, indent=2) + "\n"
+            console_log += f"\nSummary: {len(result.outputs) if result.outputs else 0} image(s) generated\n"
+            console_log += "=======================================================\n"
+
             # Download outputs
             if not result.outputs:
+                console_log += f"\n=======================================================\n"
+                console_log += f"ERROR: No outputs in response\n"
+                console_log += f"  status: {result.status}\n"
+                console_log += "=======================================================\n"
                 raise Exception("No outputs returned from Firefly API")
+
+            console_log += f"\n=======================================================\n"
+            console_log += f"DOWNLOADING OUTPUTS\n"
+            console_log += f"-------------------------------------------------------\n"
+            console_log += f"Downloading {len(result.outputs)} image(s)...\n"
 
             output_bytesio, presigned_urls = await download_firefly_outputs(
                 result.outputs,
                 unique_id=unique_id,
             )
+
+            console_log += f"✓ Downloaded {len(output_bytesio)} image(s) successfully\n"
+            console_log += "=======================================================\n"
+
+            # Add presigned URLs to console log
+            console_log += f"\nPresigned URLs (valid for 1 hour):\n"
+            for i, url in enumerate(presigned_urls, 1):
+                console_log += f"  [{i}] {url}\n"
+            console_log += "=======================================================\n"
 
             # Convert to tensors
             images = []
@@ -1387,8 +1560,14 @@ class FireflyGenerateSimilarNode:
                 images.append(img)
 
             images_tensor = torch.cat(images, dim=0)
-            console_log = "Debug logging not yet implemented for this node"
-            return (images_tensor, console_log)
+
+            # Split URLs into individual outputs (up to 4)
+            url_1 = presigned_urls[0] if len(presigned_urls) > 0 else ""
+            url_2 = presigned_urls[1] if len(presigned_urls) > 1 else ""
+            url_3 = presigned_urls[2] if len(presigned_urls) > 2 else ""
+            url_4 = presigned_urls[3] if len(presigned_urls) > 3 else ""
+
+            return (images_tensor, url_1, url_2, url_3, url_4, console_log)
         finally:
             await client.close()
 
@@ -1403,8 +1582,8 @@ class FireflyGenerateObjectCompositeNode:
     Provide either images (auto-uploads to Firefly storage) OR upload IDs/presigned URLs.
     """
 
-    RETURN_TYPES = (IO.IMAGE, IO.STRING)
-    RETURN_NAMES = ("image", "debug_log")
+    RETURN_TYPES = (IO.IMAGE, IO.STRING, IO.STRING, IO.STRING, IO.STRING, IO.STRING)
+    RETURN_NAMES = ("image", "image_url_1", "image_url_2", "image_url_3", "image_url_4", "debug_log")
     DESCRIPTION = cleandoc(__doc__ or "")
     FUNCTION = "api_call"
     API_NODE = True
@@ -1503,15 +1682,13 @@ class FireflyGenerateObjectCompositeNode:
         try:
             # Console logging
             console_log = ""
+            firefly_logs = []
 
             # Determine image source
             if image is not None:
                 # Upload to Firefly storage and get upload ID
                 upload_id, firefly_log = await upload_image_for_firefly_api(image[0] if len(image.shape) == 4 else image)
-                console_log += "=======================================================\n"
-                console_log += "Background Image\n"
-                console_log += firefly_log
-                console_log += "=======================================================\n\n"
+                firefly_logs.append(("Background Image", firefly_log))
                 image_source = FireflyPublicBinaryInput(uploadId=upload_id)
             else:
                 # Use provided upload ID or presigned URL
@@ -1524,10 +1701,7 @@ class FireflyGenerateObjectCompositeNode:
             if mask is not None:
                 # Upload to Firefly storage and get upload ID
                 upload_id, firefly_log = await upload_image_for_firefly_api(mask[0] if len(mask.shape) == 4 else mask)
-                console_log += "=======================================================\n"
-                console_log += "Object Placement Mask\n"
-                console_log += firefly_log
-                console_log += "=======================================================\n\n"
+                firefly_logs.append(("Object Placement Mask", firefly_log))
                 mask_source = FireflyPublicBinaryInput(uploadId=upload_id)
             else:
                 # Use provided upload ID or presigned URL
@@ -1550,6 +1724,48 @@ class FireflyGenerateObjectCompositeNode:
                 seeds=[seed],
             )
 
+            # Build request body dict for logging
+            request_body_dict = {
+                "prompt": prompt,
+                "numVariations": num_variations,
+                "seeds": [seed],
+            }
+            if image is not None:
+                request_body_dict["image"] = {"source": {"uploadId": "[UPLOADED]"}}
+            else:
+                if image_reference.lower().startswith("http"):
+                    request_body_dict["image"] = {"source": {"url": image_reference}}
+                else:
+                    request_body_dict["image"] = {"source": {"uploadId": image_reference}}
+            if mask is not None:
+                request_body_dict["mask"] = {"source": {"uploadId": "[UPLOADED]"}}
+            else:
+                if mask_reference.lower().startswith("http"):
+                    request_body_dict["mask"] = {"source": {"url": mask_reference}}
+                else:
+                    request_body_dict["mask"] = {"source": {"uploadId": mask_reference}}
+            if negative_prompt:
+                request_body_dict["negativePrompt"] = negative_prompt
+
+            # Add Firefly upload logs if any
+            if firefly_logs:
+                console_log += "=======================================================\n"
+                for label, log in firefly_logs:
+                    console_log += f"{label}\n"
+                    console_log += log
+                console_log += "=======================================================\n\n"
+
+            console_log += "=======================================================\n"
+            console_log += "POST /v3/images/generate-object-composite-async\n"
+            console_log += "-------------------------------------------------------\n"
+            console_log += f"Request Headers:\n"
+            console_log += f"  x-model-version: image3\n"
+            console_log += f"  Authorization: Bearer [REDACTED]\n"
+            console_log += f"  Content-Type: application/json\n"
+            console_log += f"\nRequest Body:\n"
+            import json
+            console_log += json.dumps(request_body_dict, indent=2) + "\n"
+
             # Submit async job
             submit_endpoint = ApiEndpoint(
                 path="/v3/images/generate-object-composite-async",
@@ -1566,7 +1782,23 @@ class FireflyGenerateObjectCompositeNode:
 
             submit_response: AsyncAcceptResponse = await submit_op.execute(client=client)
 
+            # Log response
+            response_body_dict = {
+                "jobId": submit_response.jobId,
+            }
+            console_log += f"\nResponse Status: 202 Accepted\n"
+            console_log += f"Response Headers:\n"
+            console_log += f"  Content-Type: application/json\n"
+            console_log += f"\nResponse Body:\n"
+            console_log += json.dumps(response_body_dict, indent=2) + "\n"
+            console_log += "=======================================================\n"
+
             # Poll for completion
+            console_log += f"\n=======================================================\n"
+            console_log += f"GET /v3/status/{submit_response.jobId}\n"
+            console_log += f"-------------------------------------------------------\n"
+            console_log += f"Polling for job completion...\n"
+
             poll_endpoint = ApiEndpoint(
                 path=f"/v3/status/{submit_response.jobId}",
                 method=HttpMethod.GET,
@@ -1588,14 +1820,46 @@ class FireflyGenerateObjectCompositeNode:
 
             result: AsyncTaskResponse = await poll_op.execute(client=client)
 
+            # Log polling response
+            poll_response_dict = {
+                "status": result.status,
+                "jobId": result.jobId,
+                "outputs": [{"image": {"url": "[PRESIGNED_URL]"}} for _ in (result.outputs or [])],
+            }
+            console_log += f"\nResponse Status: 200 OK\n"
+            console_log += f"Response Headers:\n"
+            console_log += f"  Content-Type: application/json\n"
+            console_log += f"\nResponse Body:\n"
+            console_log += json.dumps(poll_response_dict, indent=2) + "\n"
+            console_log += f"\nSummary: {len(result.outputs) if result.outputs else 0} image(s) generated\n"
+            console_log += "=======================================================\n"
+
             # Download outputs
             if not result.outputs:
+                console_log += f"\n=======================================================\n"
+                console_log += f"ERROR: No outputs in response\n"
+                console_log += f"  status: {result.status}\n"
+                console_log += "=======================================================\n"
                 raise Exception("No outputs returned from Firefly API")
+
+            console_log += f"\n=======================================================\n"
+            console_log += f"DOWNLOADING OUTPUTS\n"
+            console_log += f"-------------------------------------------------------\n"
+            console_log += f"Downloading {len(result.outputs)} image(s)...\n"
 
             output_bytesio, presigned_urls = await download_firefly_outputs(
                 result.outputs,
                 unique_id=unique_id,
             )
+
+            console_log += f"✓ Downloaded {len(output_bytesio)} image(s) successfully\n"
+            console_log += "=======================================================\n"
+
+            # Add presigned URLs to console log
+            console_log += f"\nPresigned URLs (valid for 1 hour):\n"
+            for i, url in enumerate(presigned_urls, 1):
+                console_log += f"  [{i}] {url}\n"
+            console_log += "=======================================================\n"
 
             # Convert to tensors
             images = []
@@ -1606,8 +1870,14 @@ class FireflyGenerateObjectCompositeNode:
                 images.append(img)
 
             images_tensor = torch.cat(images, dim=0)
-            console_log = "Debug logging not yet implemented for this node"
-            return (images_tensor, console_log)
+
+            # Split URLs into individual outputs (up to 4)
+            url_1 = presigned_urls[0] if len(presigned_urls) > 0 else ""
+            url_2 = presigned_urls[1] if len(presigned_urls) > 1 else ""
+            url_3 = presigned_urls[2] if len(presigned_urls) > 2 else ""
+            url_4 = presigned_urls[3] if len(presigned_urls) > 3 else ""
+
+            return (images_tensor, url_1, url_2, url_3, url_4, console_log)
         finally:
             await client.close()
 

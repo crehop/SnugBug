@@ -969,8 +969,8 @@ class FireflyGenerativeFillNodeV2:
     - Dual input support for images and masks
     """
 
-    RETURN_TYPES = ("IMAGE", "STRING", "STRING")
-    RETURN_NAMES = ("image", "image_url", "debug_log")
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("image", "image_url_1", "image_url_2", "image_url_3", "image_url_4", "debug_log")
     FUNCTION = "api_call"
     API_NODE = True
     CATEGORY = "api node/firefly v2"
@@ -1007,6 +1007,22 @@ class FireflyGenerativeFillNodeV2:
                         "tooltip": "Mask upload ID or presigned URL from another node.",
                     },
                 ),
+                "prompt": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "multiline": True,
+                        "tooltip": "Optional prompt to guide the fill.",
+                    },
+                ),
+                "negative_prompt": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "multiline": True,
+                        "tooltip": "Negative prompt to exclude unwanted elements.",
+                    },
+                ),
             },
             "required": {
                 "num_variations": (
@@ -1023,25 +1039,6 @@ class FireflyGenerativeFillNodeV2:
                     {
                         "default": "",
                         "tooltip": "Seed(s) for reproducibility. Leave empty for random, or provide single seed (e.g. '12345') or multiple comma-separated seeds (e.g. '1,2,3,4').",
-                    },
-                ),
-            },
-            "optional": {
-                "prompt": (
-                    "STRING",
-                    {
-                        "default": "",
-                        "multiline": True,
-                        "forceInput": True,
-                        "tooltip": "Optional prompt to guide the fill.",
-                    },
-                ),
-                "negative_prompt": (
-                    "STRING",
-                    {
-                        "default": "",
-                        "forceInput": True,
-                        "tooltip": "Negative prompt to exclude unwanted elements.",
                     },
                 ),
             },
@@ -1193,15 +1190,87 @@ class FireflyGenerativeFillNodeV2:
                 pbar.update(1)
 
             images_tensor = torch.cat(images, dim=0)
-            console_log = f"Generative Fill completed: {total} image(s) processed"
 
-            # Return first URL (typically only 1 image is generated)
-            image_url = all_urls[0] if len(all_urls) > 0 else ""
+            # Build comprehensive debug log
+            console_log = self._build_debug_log(
+                num_variations=num_variations,
+                seed=seed,
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                image=image,
+                image_reference=image_reference,
+                mask=mask,
+                mask_reference=mask_reference,
+                total_processed=total,
+                total_urls=len(all_urls),
+            )
 
-            return (images_tensor, image_url, console_log)
+            # Add presigned URLs to console log
+            console_log += f"\nPresigned URLs (valid for 1 hour):\n"
+            for idx, url in enumerate(all_urls, 1):
+                console_log += f"  [{idx}] {url}\n"
+            console_log += f"{'='*55}\n"
+
+            # Split URLs into individual outputs (up to 4)
+            image_url_1 = all_urls[0] if len(all_urls) > 0 else ""
+            image_url_2 = all_urls[1] if len(all_urls) > 1 else ""
+            image_url_3 = all_urls[2] if len(all_urls) > 2 else ""
+            image_url_4 = all_urls[3] if len(all_urls) > 3 else ""
+
+            return (images_tensor, image_url_1, image_url_2, image_url_3, image_url_4, console_log)
 
         finally:
             await client.close()
+
+    def _build_debug_log(
+        self,
+        num_variations: int,
+        seed: str,
+        prompt: str,
+        negative_prompt: str,
+        image: Optional[torch.Tensor],
+        image_reference: str,
+        mask: Optional[torch.Tensor],
+        mask_reference: str,
+        total_processed: int,
+        total_urls: int,
+    ) -> str:
+        """Build formatted debug log for console output."""
+        log = "=" * 55 + "\n"
+        log += "POST /v3/images/fill-async\n"
+        log += "-" * 55 + "\n"
+        log += f"Headers:\n"
+        log += f"  x-model-version: image3\n"
+        log += f"\nRequest Body:\n"
+
+        # Image source
+        if image is not None:
+            log += f"  image: [UPLOADED IMAGE]\n"
+        else:
+            log += f"  image: {image_reference}\n"
+
+        # Mask source
+        if mask is not None:
+            log += f"  mask: [UPLOADED MASK]\n"
+        else:
+            log += f"  mask: {mask_reference}\n"
+
+        log += f"  numVariations: {num_variations}\n"
+
+        if seed and seed.strip():
+            log += f"  seeds: [{seed}]\n"
+
+        if prompt and prompt.strip():
+            log += f"  prompt: {prompt[:50]}...\n" if len(prompt) > 50 else f"  prompt: {prompt}\n"
+
+        if negative_prompt and negative_prompt.strip():
+            log += f"  negativePrompt: {negative_prompt[:30]}...\n" if len(negative_prompt) > 30 else f"  negativePrompt: {negative_prompt}\n"
+
+        log += f"\nProcessed: {total_processed} image(s)\n"
+        log += f"Generated: {total_urls} output(s)\n"
+        log += "=" * 55 + "\n"
+
+        return log
 
 
 class FireflyGenerativeExpandNodeV2:
@@ -1719,7 +1788,6 @@ class FireflyGenerateSimilarNodeV2:
                     {
                         "default": "",
                         "multiline": True,
-                        "forceInput": True,
                         "tooltip": "Optional prompt to guide the generation.",
                     },
                 ),
@@ -1727,7 +1795,7 @@ class FireflyGenerateSimilarNodeV2:
                     "STRING",
                     {
                         "default": "",
-                        "forceInput": True,
+                        "multiline": True,
                         "tooltip": "Negative prompt to exclude unwanted elements.",
                     },
                 ),
@@ -1982,8 +2050,8 @@ class FireflyGenerateObjectCompositeNodeV2:
     - Dual input support for images and masks
     """
 
-    RETURN_TYPES = ("IMAGE", "STRING", "STRING")
-    RETURN_NAMES = ("image", "image_url", "debug_log")
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("image", "image_url_1", "image_url_2", "image_url_3", "image_url_4", "debug_log")
     FUNCTION = "api_call"
     API_NODE = True
     CATEGORY = "api node/firefly v2"
@@ -2020,8 +2088,6 @@ class FireflyGenerateObjectCompositeNodeV2:
                         "tooltip": "Mask upload ID or presigned URL from another node.",
                     },
                 ),
-            },
-            "required": {
                 "prompt": (
                     "STRING",
                     {
@@ -2030,6 +2096,16 @@ class FireflyGenerateObjectCompositeNodeV2:
                         "tooltip": "Text prompt describing the object to generate.",
                     },
                 ),
+                "negative_prompt": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "multiline": True,
+                        "tooltip": "Negative prompt to exclude unwanted elements.",
+                    },
+                ),
+            },
+            "required": {
                 "num_variations": (
                     "INT",
                     {
@@ -2044,16 +2120,6 @@ class FireflyGenerateObjectCompositeNodeV2:
                     {
                         "default": "",
                         "tooltip": "Seed(s) for reproducibility. Leave empty for random, or provide single seed (e.g. '12345') or multiple comma-separated seeds (e.g. '1,2,3,4').",
-                    },
-                ),
-            },
-            "optional": {
-                "negative_prompt": (
-                    "STRING",
-                    {
-                        "default": "",
-                        "forceInput": True,
-                        "tooltip": "Negative prompt to exclude unwanted elements.",
                     },
                 ),
             },
@@ -2207,12 +2273,83 @@ class FireflyGenerateObjectCompositeNodeV2:
                 pbar.update(1)
 
             images_tensor = torch.cat(images, dim=0)
-            console_log = f"Object Composite completed: {total} image(s) processed"
 
-            # Return first URL (typically only 1 image is generated)
-            image_url = all_urls[0] if len(all_urls) > 0 else ""
+            # Build comprehensive debug log
+            console_log = self._build_debug_log(
+                prompt=prompt,
+                num_variations=num_variations,
+                seed=seed,
+                negative_prompt=negative_prompt,
+                image=image,
+                image_reference=image_reference,
+                mask=mask,
+                mask_reference=mask_reference,
+                total_processed=total,
+                total_urls=len(all_urls),
+            )
 
-            return (images_tensor, image_url, console_log)
+            # Add presigned URLs to console log
+            console_log += f"\nPresigned URLs (valid for 1 hour):\n"
+            for idx, url in enumerate(all_urls, 1):
+                console_log += f"  [{idx}] {url}\n"
+            console_log += f"{'='*55}\n"
+
+            # Split URLs into individual outputs (up to 4)
+            image_url_1 = all_urls[0] if len(all_urls) > 0 else ""
+            image_url_2 = all_urls[1] if len(all_urls) > 1 else ""
+            image_url_3 = all_urls[2] if len(all_urls) > 2 else ""
+            image_url_4 = all_urls[3] if len(all_urls) > 3 else ""
+
+            return (images_tensor, image_url_1, image_url_2, image_url_3, image_url_4, console_log)
 
         finally:
             await client.close()
+
+    def _build_debug_log(
+        self,
+        prompt: str,
+        num_variations: int,
+        seed: str,
+        negative_prompt: str,
+        image: Optional[torch.Tensor],
+        image_reference: str,
+        mask: Optional[torch.Tensor],
+        mask_reference: str,
+        total_processed: int,
+        total_urls: int,
+    ) -> str:
+        """Build formatted debug log for console output."""
+        log = "=" * 55 + "\n"
+        log += "POST /v3/images/generate-object-composite-async\n"
+        log += "-" * 55 + "\n"
+        log += f"Headers:\n"
+        log += f"  x-model-version: image3\n"
+        log += f"\nRequest Body:\n"
+
+        log += f"  prompt: {prompt[:50]}...\n" if len(prompt) > 50 else f"  prompt: {prompt}\n"
+
+        # Image source
+        if image is not None:
+            log += f"  image: [UPLOADED IMAGE]\n"
+        else:
+            log += f"  image: {image_reference}\n"
+
+        # Mask source
+        if mask is not None:
+            log += f"  mask: [UPLOADED MASK]\n"
+        else:
+            log += f"  mask: {mask_reference}\n"
+
+        log += f"  numVariations: {num_variations}\n"
+
+        if seed and seed.strip():
+            log += f"  seeds: [{seed}]\n"
+
+        if negative_prompt and negative_prompt.strip():
+            log += f"  negativePrompt: {negative_prompt[:30]}...\n" if len(negative_prompt) > 30 else f"  negativePrompt: {negative_prompt}\n"
+
+        log += f"\nProcessed: {total_processed} image(s)\n"
+        log += f"Generated: {total_urls} output(s)\n"
+        log += "=" * 55 + "\n"
+
+        return log
