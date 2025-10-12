@@ -510,41 +510,53 @@ class FireflyTextToImageNodeV2:
         try:
             # Build style configuration
             style_config = None
-            if style_image is not None or style_reference:
-                # Determine style image source
-                if style_image is not None:
-                    # Upload to Firefly storage and get upload ID
-                    upload_id = await upload_image_to_firefly(
-                        image=style_image[0] if len(style_image.shape) == 4 else style_image,
-                    )
-                    style_ref = FireflyStyleImageReferenceV3(
-                        source=FireflyPublicBinaryInput(uploadId=upload_id)
-                    )
-                else:
-                    # Use provided upload ID or presigned URL from node connection
-                    if style_reference.lower().startswith("http"):
+
+            # Check if any style parameters are provided
+            has_style_preset = style_preset and style_preset != "none"
+            has_style_image_or_ref = style_image is not None or style_reference
+            has_style_strength = style_strength and style_strength.strip()
+
+            if has_style_preset or has_style_image_or_ref or has_style_strength:
+                # Build style_kwargs conditionally
+                style_kwargs = {}
+
+                # Add imageReference if provided
+                if style_image is not None or style_reference:
+                    if style_image is not None:
+                        # Upload to Firefly storage and get upload ID
+                        upload_id = await upload_image_to_firefly(
+                            image=style_image[0] if len(style_image.shape) == 4 else style_image,
+                        )
                         style_ref = FireflyStyleImageReferenceV3(
-                            source=FireflyPublicBinaryInput(url=style_reference)
+                            source=FireflyPublicBinaryInput(uploadId=upload_id)
                         )
                     else:
-                        style_ref = FireflyStyleImageReferenceV3(
-                            source=FireflyPublicBinaryInput(uploadId=style_reference)
-                        )
-                presets_list = [style_preset] if style_preset and style_preset != "none" else None
+                        # Use provided upload ID or presigned URL from node connection
+                        if style_reference.lower().startswith("http"):
+                            style_ref = FireflyStyleImageReferenceV3(
+                                source=FireflyPublicBinaryInput(url=style_reference)
+                            )
+                        else:
+                            style_ref = FireflyStyleImageReferenceV3(
+                                source=FireflyPublicBinaryInput(uploadId=style_reference)
+                            )
+                    style_kwargs["imageReference"] = style_ref
 
-                # Parse style_strength
-                style_strength_int = None
-                if style_strength and style_strength.strip():
+                # Add presets if provided
+                if has_style_preset:
+                    style_kwargs["presets"] = [style_preset]
+
+                # Add strength if provided
+                if has_style_strength:
                     try:
                         style_strength_int = int(style_strength.strip())
+                        style_kwargs["strength"] = style_strength_int
                     except ValueError:
                         raise ValueError(f"Invalid style_strength: '{style_strength}'. Must be an integer between 0-100.")
 
-                style_config = FireflyStyles(
-                    imageReference=style_ref,
-                    strength=style_strength_int,
-                    presets=presets_list,
-                )
+                # Create style config if we have any parameters
+                if style_kwargs:
+                    style_config = FireflyStyles(**style_kwargs)
 
             # Build structure configuration
             structure_config = None
@@ -1552,6 +1564,23 @@ class FireflyGenerateSimilarNodeV2:
                         "tooltip": "Image upload ID or presigned URL from another node.",
                     },
                 ),
+                "prompt": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "multiline": True,
+                        "forceInput": True,
+                        "tooltip": "Optional prompt to guide the generation.",
+                    },
+                ),
+                "negative_prompt": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "forceInput": True,
+                        "tooltip": "Negative prompt to exclude unwanted elements.",
+                    },
+                ),
             },
             "required": {
                 "num_variations": (
@@ -1568,25 +1597,6 @@ class FireflyGenerateSimilarNodeV2:
                     {
                         "default": "",
                         "tooltip": "Seed(s) for reproducibility. Leave empty for random, or provide single seed (e.g. '12345') or multiple comma-separated seeds (e.g. '1,2,3,4').",
-                    },
-                ),
-            },
-            "optional": {
-                "prompt": (
-                    "STRING",
-                    {
-                        "default": "",
-                        "multiline": True,
-                        "forceInput": True,
-                        "tooltip": "Optional prompt to guide the generation.",
-                    },
-                ),
-                "negative_prompt": (
-                    "STRING",
-                    {
-                        "default": "",
-                        "forceInput": True,
-                        "tooltip": "Negative prompt to exclude unwanted elements.",
                     },
                 ),
             },
