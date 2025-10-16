@@ -999,6 +999,12 @@ class FireflyGenerativeFillNodeV2:
                         "tooltip": "Mask for fill area (auto-uploads to Firefly storage).",
                     },
                 ),
+                "mask_image": (
+                    "IMAGE",
+                    {
+                        "tooltip": "Mask image for fill area (auto-uploads to Firefly storage).",
+                    },
+                ),
                 "mask_reference": (
                     "STRING",
                     {
@@ -1054,6 +1060,7 @@ class FireflyGenerativeFillNodeV2:
         image: Optional[torch.Tensor] = None,
         image_reference: str = "",
         mask: Optional[torch.Tensor] = None,
+        mask_image: Optional[torch.Tensor] = None,
         mask_reference: str = "",
         prompt: str = "",
         negative_prompt: str = "",
@@ -1065,10 +1072,17 @@ class FireflyGenerativeFillNodeV2:
             raise ValueError("Must provide either 'image' or 'image_reference'")
         if image is not None and image_reference:
             raise ValueError("Cannot provide both 'image' and 'image_reference' - choose only one")
-        if mask is None and not mask_reference:
-            raise ValueError("Must provide either 'mask' or 'mask_reference'")
-        if mask is not None and mask_reference:
-            raise ValueError("Cannot provide both 'mask' and 'mask_reference' - choose only one")
+
+        # Validate mask inputs (allow exactly one of three options)
+        mask_inputs_provided = sum([
+            mask is not None,
+            mask_image is not None,
+            bool(mask_reference),
+        ])
+        if mask_inputs_provided == 0:
+            raise ValueError("Must provide one of: 'mask', 'mask_image', or 'mask_reference'")
+        if mask_inputs_provided > 1:
+            raise ValueError("Cannot provide multiple mask inputs - choose only one: 'mask', 'mask_image', or 'mask_reference'")
 
         # Parse seeds
         seeds_list = None
@@ -1105,8 +1119,12 @@ class FireflyGenerativeFillNodeV2:
 
                 # Determine mask source
                 if mask is not None:
-                    # Upload to Firefly storage and get upload ID
+                    # Upload MASK tensor to Firefly storage and get upload ID
                     mask_upload_id = await upload_image_to_firefly(image=mask[i:i+1])
+                    mask_source = FireflyPublicBinaryInput(uploadId=mask_upload_id)
+                elif mask_image is not None:
+                    # Upload IMAGE tensor to Firefly storage and get upload ID
+                    mask_upload_id = await upload_image_to_firefly(image=mask_image[i])
                     mask_source = FireflyPublicBinaryInput(uploadId=mask_upload_id)
                 else:
                     # Use provided upload ID or presigned URL
@@ -1200,6 +1218,7 @@ class FireflyGenerativeFillNodeV2:
                 image=image,
                 image_reference=image_reference,
                 mask=mask,
+                mask_image=mask_image,
                 mask_reference=mask_reference,
                 total_processed=total,
                 total_urls=len(all_urls),
@@ -1231,6 +1250,7 @@ class FireflyGenerativeFillNodeV2:
         image: Optional[torch.Tensor],
         image_reference: str,
         mask: Optional[torch.Tensor],
+        mask_image: Optional[torch.Tensor],
         mask_reference: str,
         total_processed: int,
         total_urls: int,
@@ -1252,6 +1272,8 @@ class FireflyGenerativeFillNodeV2:
         # Mask source
         if mask is not None:
             log += f"  mask: [UPLOADED MASK]\n"
+        elif mask_image is not None:
+            log += f"  mask: [UPLOADED MASK IMAGE]\n"
         else:
             log += f"  mask: {mask_reference}\n"
 
@@ -2080,6 +2102,12 @@ class FireflyGenerateObjectCompositeNodeV2:
                         "tooltip": "Mask for object placement (auto-uploads to Firefly storage).",
                     },
                 ),
+                "mask_image": (
+                    "IMAGE",
+                    {
+                        "tooltip": "Mask image for object placement (auto-uploads to Firefly storage).",
+                    },
+                ),
                 "mask_reference": (
                     "STRING",
                     {
@@ -2136,6 +2164,7 @@ class FireflyGenerateObjectCompositeNodeV2:
         image: Optional[torch.Tensor] = None,
         image_reference: str = "",
         mask: Optional[torch.Tensor] = None,
+        mask_image: Optional[torch.Tensor] = None,
         mask_reference: str = "",
         negative_prompt: str = "",
         unique_id: Optional[str] = None,
@@ -2148,10 +2177,17 @@ class FireflyGenerateObjectCompositeNodeV2:
             raise ValueError("Must provide either 'image' or 'image_reference'")
         if image is not None and image_reference:
             raise ValueError("Cannot provide both 'image' and 'image_reference' - choose only one")
-        if mask is None and not mask_reference:
-            raise ValueError("Must provide either 'mask' or 'mask_reference'")
-        if mask is not None and mask_reference:
-            raise ValueError("Cannot provide both 'mask' and 'mask_reference' - choose only one")
+
+        # Validate mask inputs (allow exactly one of three options)
+        mask_inputs_provided = sum([
+            mask is not None,
+            mask_image is not None,
+            bool(mask_reference),
+        ])
+        if mask_inputs_provided == 0:
+            raise ValueError("Must provide one of: 'mask', 'mask_image', or 'mask_reference'")
+        if mask_inputs_provided > 1:
+            raise ValueError("Cannot provide multiple mask inputs - choose only one: 'mask', 'mask_image', or 'mask_reference'")
 
         # Parse seeds
         seeds_list = None
@@ -2188,8 +2224,12 @@ class FireflyGenerateObjectCompositeNodeV2:
 
                 # Determine mask source
                 if mask is not None:
-                    # Upload to Firefly storage and get upload ID
+                    # Upload MASK tensor to Firefly storage and get upload ID
                     mask_upload_id = await upload_image_to_firefly(image=mask[i:i+1])
+                    mask_source = FireflyPublicBinaryInput(uploadId=mask_upload_id)
+                elif mask_image is not None:
+                    # Upload IMAGE tensor to Firefly storage and get upload ID
+                    mask_upload_id = await upload_image_to_firefly(image=mask_image[i])
                     mask_source = FireflyPublicBinaryInput(uploadId=mask_upload_id)
                 else:
                     # Use provided upload ID or presigned URL
@@ -2283,6 +2323,7 @@ class FireflyGenerateObjectCompositeNodeV2:
                 image=image,
                 image_reference=image_reference,
                 mask=mask,
+                mask_image=mask_image,
                 mask_reference=mask_reference,
                 total_processed=total,
                 total_urls=len(all_urls),
@@ -2314,6 +2355,7 @@ class FireflyGenerateObjectCompositeNodeV2:
         image: Optional[torch.Tensor],
         image_reference: str,
         mask: Optional[torch.Tensor],
+        mask_image: Optional[torch.Tensor],
         mask_reference: str,
         total_processed: int,
         total_urls: int,
@@ -2337,6 +2379,8 @@ class FireflyGenerateObjectCompositeNodeV2:
         # Mask source
         if mask is not None:
             log += f"  mask: [UPLOADED MASK]\n"
+        elif mask_image is not None:
+            log += f"  mask: [UPLOADED MASK IMAGE]\n"
         else:
             log += f"  mask: {mask_reference}\n"
 
