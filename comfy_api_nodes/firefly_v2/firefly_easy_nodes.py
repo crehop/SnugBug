@@ -1029,6 +1029,20 @@ class FireflyGenerativeFillNodeV2:
                         "tooltip": "Negative prompt to exclude unwanted elements.",
                     },
                 ),
+                "size": (
+                    FIREFLY_ASPECT_RATIOS,
+                    {
+                        "default": "2048x2048 (1:1)",
+                        "tooltip": "Output image size and aspect ratio.",
+                    },
+                ),
+                "prompt_biasing_locale": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "tooltip": "Locale for region-specific generation (e.g., 'en-US', 'de-DE', 'ja-JP'). Leave empty for AUTO.",
+                    },
+                ),
             },
             "required": {
                 "num_variations": (
@@ -1064,6 +1078,8 @@ class FireflyGenerativeFillNodeV2:
         mask_reference: str = "",
         prompt: str = "",
         negative_prompt: str = "",
+        size: str = "2048x2048 (1:1)",
+        prompt_biasing_locale: str = "",
         unique_id: Optional[str] = None,
     ):
         """Fill masked areas using Firefly API."""
@@ -1091,6 +1107,11 @@ class FireflyGenerativeFillNodeV2:
                 seeds_list = [int(s.strip()) for s in seed.split(",") if s.strip()]
             except ValueError:
                 raise ValueError(f"Invalid seed format: '{seed}'. Use integers separated by commas (e.g., '1,2,3,4').")
+
+        # Parse size to extract width and height
+        size_parts = size.split("x")
+        width = int(size_parts[0])
+        height = int(size_parts[1].split()[0])  # Extract height before the aspect ratio part
 
         client = await create_adobe_client()
 
@@ -1143,8 +1164,10 @@ class FireflyGenerativeFillNodeV2:
                     ),
                     prompt=prompt if prompt else None,
                     negativePrompt=negative_prompt if negative_prompt else None,
+                    size=FireflySize(width=width, height=height),
                     numVariations=num_variations,
                     seeds=seeds_list,
+                    promptBiasingLocaleCode=prompt_biasing_locale if prompt_biasing_locale else None,
                 )
 
                 # Submit and poll
@@ -1215,6 +1238,8 @@ class FireflyGenerativeFillNodeV2:
                 seed=seed,
                 prompt=prompt,
                 negative_prompt=negative_prompt,
+                size=size,
+                prompt_biasing_locale=prompt_biasing_locale,
                 image=image,
                 image_reference=image_reference,
                 mask=mask,
@@ -1247,6 +1272,8 @@ class FireflyGenerativeFillNodeV2:
         seed: str,
         prompt: str,
         negative_prompt: str,
+        size: str,
+        prompt_biasing_locale: str,
         image: Optional[torch.Tensor],
         image_reference: str,
         mask: Optional[torch.Tensor],
@@ -1277,6 +1304,12 @@ class FireflyGenerativeFillNodeV2:
         else:
             log += f"  mask: {mask_reference}\n"
 
+        # Parse and display size
+        size_parts = size.split("x")
+        width = size_parts[0]
+        height = size_parts[1].split()[0]
+        log += f"  size: {width}x{height}\n"
+
         log += f"  numVariations: {num_variations}\n"
 
         if seed and seed.strip():
@@ -1287,6 +1320,9 @@ class FireflyGenerativeFillNodeV2:
 
         if negative_prompt and negative_prompt.strip():
             log += f"  negativePrompt: {negative_prompt[:30]}...\n" if len(negative_prompt) > 30 else f"  negativePrompt: {negative_prompt}\n"
+
+        if prompt_biasing_locale and prompt_biasing_locale.strip():
+            log += f"  promptBiasingLocaleCode: {prompt_biasing_locale}\n"
 
         log += f"\nProcessed: {total_processed} image(s)\n"
         log += f"Generated: {total_urls} output(s)\n"
@@ -2132,6 +2168,97 @@ class FireflyGenerateObjectCompositeNodeV2:
                         "tooltip": "Negative prompt to exclude unwanted elements.",
                     },
                 ),
+                "model_version": (
+                    ["image3", "image3_fast"],
+                    {
+                        "default": "image3",
+                        "tooltip": "Firefly model version (Object Composite only supports image3 and image3_fast).",
+                    },
+                ),
+                "content_class": (
+                    ["photo", "art"],
+                    {
+                        "default": "photo",
+                        "tooltip": "Content class: 'photo' for photorealistic, 'art' for artistic style.",
+                    },
+                ),
+                "size": (
+                    FIREFLY_ASPECT_RATIOS,
+                    {
+                        "default": "2048x2048 (1:1)",
+                        "tooltip": "Image size and aspect ratio.",
+                    },
+                ),
+                "alignment_horizontal": (
+                    ["none", "center", "left", "right"],
+                    {
+                        "default": "none",
+                        "tooltip": "Horizontal alignment of the placed object.",
+                    },
+                ),
+                "alignment_vertical": (
+                    ["none", "center", "top", "bottom"],
+                    {
+                        "default": "none",
+                        "tooltip": "Vertical alignment of the placed object.",
+                    },
+                ),
+                "inset_left": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "tooltip": "Left margin in pixels. Leave empty for 0.",
+                    },
+                ),
+                "inset_top": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "tooltip": "Top margin in pixels. Leave empty for 0.",
+                    },
+                ),
+                "inset_right": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "tooltip": "Right margin in pixels. Leave empty for 0.",
+                    },
+                ),
+                "inset_bottom": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "tooltip": "Bottom margin in pixels. Leave empty for 0.",
+                    },
+                ),
+                "style_preset": (
+                    FIREFLY_STYLE_PRESETS,
+                    {
+                        "default": "None",
+                        "tooltip": "Style preset to apply to generation.",
+                    },
+                ),
+                "style_image": (
+                    "IMAGE",
+                    {
+                        "tooltip": "Style reference image (auto-uploads to Firefly storage).",
+                    },
+                ),
+                "style_reference": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "forceInput": True,
+                        "tooltip": "Style reference image upload ID or presigned URL from another node.",
+                    },
+                ),
+                "style_strength": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "tooltip": "Style reference strength (0-100). Leave empty for default.",
+                    },
+                ),
             },
             "required": {
                 "num_variations": (
@@ -2167,10 +2294,40 @@ class FireflyGenerateObjectCompositeNodeV2:
         mask_image: Optional[torch.Tensor] = None,
         mask_reference: str = "",
         negative_prompt: str = "",
+        model_version: str = "image3",
+        content_class: str = "photo",
+        size: str = "2048x2048 (1:1)",
+        alignment_horizontal: str = "none",
+        alignment_vertical: str = "none",
+        inset_left: str = "",
+        inset_top: str = "",
+        inset_right: str = "",
+        inset_bottom: str = "",
+        style_preset: str = "None",
+        style_reference: str = "",
+        style_image: Optional[torch.Tensor] = None,
+        style_strength: str = "",
         unique_id: Optional[str] = None,
     ):
         """Generate object composite using Firefly API."""
         validate_string(prompt, strip_whitespace=False, max_length=1024)
+
+        # Convert human-readable style preset to API enum value
+        style_preset_enum = FIREFLY_STYLE_PRESET_MAP.get(style_preset, "none")
+
+        # Parse size
+        size_parts = size.split(" ")[0].split("x")
+        width = int(size_parts[0])
+        height = int(size_parts[1])
+
+        # Parse inset values
+        try:
+            inset_left_int = int(inset_left.strip()) if inset_left and inset_left.strip() else 0
+            inset_top_int = int(inset_top.strip()) if inset_top and inset_top.strip() else 0
+            inset_right_int = int(inset_right.strip()) if inset_right and inset_right.strip() else 0
+            inset_bottom_int = int(inset_bottom.strip()) if inset_bottom and inset_bottom.strip() else 0
+        except ValueError:
+            raise ValueError(f"Invalid inset values. Must be integers.")
 
         # Validate inputs
         if image is None and not image_reference:
@@ -2189,6 +2346,14 @@ class FireflyGenerateObjectCompositeNodeV2:
         if mask_inputs_provided > 1:
             raise ValueError("Cannot provide multiple mask inputs - choose only one: 'mask', 'mask_image', or 'mask_reference'")
 
+        # Validate style inputs (allow at most one)
+        style_inputs_provided = sum([
+            style_image is not None,
+            bool(style_reference),
+        ])
+        if style_inputs_provided > 1:
+            raise ValueError("Cannot provide multiple style inputs - choose only one: 'style_image' or 'style_reference'")
+
         # Parse seeds
         seeds_list = None
         if seed and seed.strip():
@@ -2197,7 +2362,7 @@ class FireflyGenerateObjectCompositeNodeV2:
             except ValueError:
                 raise ValueError(f"Invalid seed format: '{seed}'. Use integers separated by commas (e.g., '1,2,3,4').")
 
-        client = await create_adobe_client()
+        client = await create_adobe_client(model_version=model_version)
 
         try:
             # Prepare mask if provided as tensor
@@ -2238,6 +2403,91 @@ class FireflyGenerateObjectCompositeNodeV2:
                     else:
                         mask_source = FireflyPublicBinaryInput(uploadId=mask_reference)
 
+                # Build style configuration
+                style_config = None
+
+                # Check if any style parameters are provided (excluding "None" and "none")
+                has_style_preset = style_preset_enum and style_preset_enum != "none" and style_preset != "None"
+                has_style_image_or_ref = style_image is not None or style_reference
+                has_style_strength = style_strength and style_strength.strip()
+
+                if has_style_preset or has_style_image_or_ref or has_style_strength:
+                    # Build style_kwargs conditionally
+                    style_kwargs = {}
+
+                    # Add imageReference if provided
+                    if style_image is not None or style_reference:
+                        if style_image is not None:
+                            # Upload to Firefly storage and get upload ID
+                            style_upload_id = await upload_image_to_firefly(
+                                image=style_image[0] if len(style_image.shape) == 4 else style_image,
+                            )
+                            style_ref = FireflyStyleImageReferenceV3(
+                                source=FireflyPublicBinaryInput(uploadId=style_upload_id)
+                            )
+                        else:
+                            # Use provided upload ID or presigned URL from node connection
+                            if style_reference.lower().startswith("http"):
+                                style_ref = FireflyStyleImageReferenceV3(
+                                    source=FireflyPublicBinaryInput(url=style_reference)
+                                )
+                            else:
+                                style_ref = FireflyStyleImageReferenceV3(
+                                    source=FireflyPublicBinaryInput(uploadId=style_reference)
+                                )
+                        style_kwargs["imageReference"] = style_ref
+
+                    # Add presets if provided (only if not "None" or "none")
+                    if has_style_preset:
+                        style_kwargs["presets"] = [style_preset_enum]
+
+                    # Add strength if provided
+                    if has_style_strength:
+                        try:
+                            style_strength_int = int(style_strength.strip())
+                            style_kwargs["strength"] = style_strength_int
+                        except ValueError:
+                            raise ValueError(f"Invalid style_strength: '{style_strength}'. Must be an integer between 0-100.")
+
+                    # Create style config if we have any parameters
+                    if style_kwargs:
+                        style_config = FireflyStyles(**style_kwargs)
+
+                # Build placement configuration
+                placement_config = None
+                has_alignment = (alignment_horizontal != "none" or alignment_vertical != "none")
+                has_inset = (inset_left_int > 0 or inset_top_int > 0 or inset_right_int > 0 or inset_bottom_int > 0)
+                has_placement = has_alignment or has_inset
+
+                if has_placement:
+                    placement_dict = {}
+
+                    # Only create alignment if not "none"
+                    if has_alignment:
+                        alignment_dict = {}
+                        if alignment_horizontal != "none":
+                            alignment_dict["horizontal"] = alignment_horizontal
+                        if alignment_vertical != "none":
+                            alignment_dict["vertical"] = alignment_vertical
+                        if alignment_dict:
+                            placement_dict["alignment"] = alignment_dict
+
+                    # Only include inset if any value is non-zero
+                    if has_inset:
+                        inset_dict = {}
+                        if inset_left_int > 0:
+                            inset_dict["left"] = inset_left_int
+                        if inset_top_int > 0:
+                            inset_dict["top"] = inset_top_int
+                        if inset_right_int > 0:
+                            inset_dict["right"] = inset_right_int
+                        if inset_bottom_int > 0:
+                            inset_dict["bottom"] = inset_bottom_int
+                        if inset_dict:
+                            placement_dict["inset"] = inset_dict
+
+                    placement_config = placement_dict if placement_dict else None
+
                 # Prepare request
                 request = GenerateObjectCompositeRequest(
                     image=FireflyInputImage(
@@ -2248,6 +2498,10 @@ class FireflyGenerateObjectCompositeNodeV2:
                     ),
                     prompt=prompt,
                     negativePrompt=negative_prompt if negative_prompt else None,
+                    contentClass=FireflyContentClass(content_class),
+                    size=FireflySize(width=width, height=height),
+                    style=style_config,
+                    placement=placement_config,
                     numVariations=num_variations,
                     seeds=seeds_list,
                 )
@@ -2316,15 +2570,30 @@ class FireflyGenerateObjectCompositeNodeV2:
 
             # Build comprehensive debug log
             console_log = self._build_debug_log(
+                model_version=model_version,
                 prompt=prompt,
                 num_variations=num_variations,
                 seed=seed,
                 negative_prompt=negative_prompt,
+                content_class=content_class,
+                width=width,
+                height=height,
                 image=image,
                 image_reference=image_reference,
                 mask=mask,
                 mask_image=mask_image,
                 mask_reference=mask_reference,
+                alignment_horizontal=alignment_horizontal,
+                alignment_vertical=alignment_vertical,
+                inset_left_int=inset_left_int,
+                inset_top_int=inset_top_int,
+                inset_right_int=inset_right_int,
+                inset_bottom_int=inset_bottom_int,
+                style_config=style_config,
+                style_image=style_image,
+                style_reference=style_reference,
+                style_strength=style_strength,
+                style_preset=style_preset,
                 total_processed=total,
                 total_urls=len(all_urls),
             )
@@ -2348,15 +2617,30 @@ class FireflyGenerateObjectCompositeNodeV2:
 
     def _build_debug_log(
         self,
+        model_version: str,
         prompt: str,
         num_variations: int,
         seed: str,
         negative_prompt: str,
+        content_class: str,
+        width: int,
+        height: int,
         image: Optional[torch.Tensor],
         image_reference: str,
         mask: Optional[torch.Tensor],
         mask_image: Optional[torch.Tensor],
         mask_reference: str,
+        alignment_horizontal: str,
+        alignment_vertical: str,
+        inset_left_int: int,
+        inset_top_int: int,
+        inset_right_int: int,
+        inset_bottom_int: int,
+        style_config: Any,
+        style_image: Optional[torch.Tensor],
+        style_reference: str,
+        style_strength: str,
+        style_preset: str,
         total_processed: int,
         total_urls: int,
     ) -> str:
@@ -2365,7 +2649,7 @@ class FireflyGenerateObjectCompositeNodeV2:
         log += "POST /v3/images/generate-object-composite-async\n"
         log += "-" * 55 + "\n"
         log += f"Headers:\n"
-        log += f"  x-model-version: image3\n"
+        log += f"  x-model-version: {model_version}\n"
         log += f"\nRequest Body:\n"
 
         log += f"  prompt: {prompt[:50]}...\n" if len(prompt) > 50 else f"  prompt: {prompt}\n"
@@ -2384,6 +2668,8 @@ class FireflyGenerateObjectCompositeNodeV2:
         else:
             log += f"  mask: {mask_reference}\n"
 
+        log += f"  contentClass: {content_class}\n"
+        log += f"  size: {width}x{height}\n"
         log += f"  numVariations: {num_variations}\n"
 
         if seed and seed.strip():
@@ -2391,6 +2677,42 @@ class FireflyGenerateObjectCompositeNodeV2:
 
         if negative_prompt and negative_prompt.strip():
             log += f"  negativePrompt: {negative_prompt[:30]}...\n" if len(negative_prompt) > 30 else f"  negativePrompt: {negative_prompt}\n"
+
+        # Placement info
+        has_alignment = (alignment_horizontal != "none" or alignment_vertical != "none")
+        has_inset = (inset_left_int > 0 or inset_top_int > 0 or inset_right_int > 0 or inset_bottom_int > 0)
+        has_placement = has_alignment or has_inset
+
+        if has_placement:
+            log += f"  placement:\n"
+            if has_alignment:
+                log += f"    alignment:\n"
+                if alignment_horizontal != "none":
+                    log += f"      horizontal: {alignment_horizontal}\n"
+                if alignment_vertical != "none":
+                    log += f"      vertical: {alignment_vertical}\n"
+            if has_inset:
+                log += f"    inset:\n"
+                if inset_left_int > 0:
+                    log += f"      left: {inset_left_int}\n"
+                if inset_top_int > 0:
+                    log += f"      top: {inset_top_int}\n"
+                if inset_right_int > 0:
+                    log += f"      right: {inset_right_int}\n"
+                if inset_bottom_int > 0:
+                    log += f"      bottom: {inset_bottom_int}\n"
+
+        # Style info
+        if style_config:
+            log += f"  style:\n"
+            if style_image is not None:
+                log += f"    uploadId: [UPLOADED IMAGE]\n"
+            elif style_reference:
+                log += f"    uploadId: {style_reference}\n"
+            if style_strength and style_strength.strip():
+                log += f"    strength: {style_strength}\n"
+            if style_preset and style_preset != "None" and style_preset != "none":
+                log += f"    preset: {style_preset}\n"
 
         log += f"\nProcessed: {total_processed} image(s)\n"
         log += f"Generated: {total_urls} output(s)\n"
